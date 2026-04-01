@@ -4,11 +4,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Printer, Package, ShoppingCart, Plus } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/printers",  label: "Printers",  icon: Printer },
+  { href: "/dashboard", label: "Dasbor", icon: LayoutDashboard },
+  { href: "/printers",  label: "Printer",  icon: Printer },
   null, // FAB placeholder
-  { href: "/supplies",  label: "Supplies",  icon: Package },
-  { href: "/orders",    label: "Orders",    icon: ShoppingCart },
+  { href: "/supplies",  label: "Stok",     icon: Package },
+  { href: "/orders",    label: "Pesanan",   icon: ShoppingCart },
 ] as const;
 
 function openForm() {

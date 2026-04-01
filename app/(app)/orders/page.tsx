@@ -148,17 +148,6 @@ export default function OrdersPage() {
     setSheet(true);
   }
 
-  async function deleteRun(id: number, e: React.MouseEvent) {
-    e.stopPropagation();
-    if (!confirm("Delete this print run?")) return;
-    setDeletingRunId(id);
-    try {
-      await fetch(`/api/print-runs/${id}`, { method: "DELETE" });
-      await fetchRuns();
-    } finally {
-      setDeletingRunId(null);
-    }
-  }
 
   function toggleSupplyInRun(s: SupplyWithStatus) {
     setRunItems((prev) => {
@@ -201,11 +190,11 @@ export default function OrdersPage() {
       {/* Header */}
       <div className="page-header">
         <div>
-          <h1 className="page-title">Orders</h1>
+          <h1 className="page-title">Pesanan</h1>
           <p className="page-subtitle">
             {tab === "orders"
-              ? `${pendingCount} pending · ${orders.length} total`
-              : `${runs.length} print run${runs.length !== 1 ? "s" : ""}`}
+              ? `${pendingCount} menunggu · ${orders.length} total`
+              : `${runs.length} rencana cetak`}
           </p>
         </div>
       </div>
@@ -218,7 +207,7 @@ export default function OrdersPage() {
           style={{ flex: 1, gap: 6 }}
           onClick={() => setTab("orders")}
         >
-          <ShoppingCart size={15} /> Stock Orders
+          <ShoppingCart size={15} /> Pesanan Stok
           {pendingCount > 0 && (
             <span style={{
               background: tab === "orders" ? "rgba(255,255,255,0.25)" : "var(--primary-dim)",
@@ -235,7 +224,7 @@ export default function OrdersPage() {
           style={{ flex: 1, gap: 6 }}
           onClick={() => setTab("printruns")}
         >
-          <ClipboardList size={15} /> Print Runs
+          <ClipboardList size={15} /> Rencana Cetak
           {runs.length > 0 && (
             <span style={{
               background: tab === "printruns" ? "rgba(255,255,255,0.25)" : "var(--primary-dim)",
@@ -254,7 +243,7 @@ export default function OrdersPage() {
           {pendingCount > 0 && (
             <div className="alert-banner alert-warning animate-in">
               <AlertTriangle size={15} style={{ flexShrink: 0 }} />
-              <span><strong>{pendingCount}</strong> order{pendingCount > 1 ? "s" : ""} awaiting fulfillment</span>
+              <span><strong>{pendingCount}</strong> pesanan menunggu diproses</span>
             </div>
           )}
 
@@ -267,7 +256,7 @@ export default function OrdersPage() {
                 style={{ padding: "7px 14px", fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}
                 onClick={() => setStatusFilter(s)}
               >
-                {s === "all" ? `All (${orders.length})` : s.charAt(0).toUpperCase() + s.slice(1)}
+                {s === "all" ? `Semua (${orders.length})` : s === "pending" ? "Menunggu" : s === "fulfilled" ? "Selesai" : "Dibatalkan"}
               </button>
             ))}
           </div>
@@ -276,8 +265,8 @@ export default function OrdersPage() {
           {!ordersLoading && filteredOrders.length === 0 && (
             <div className="empty-state animate-in">
               <ShoppingCart size={48} />
-              <h3>No {statusFilter !== "all" ? statusFilter : ""} orders</h3>
-              <p>Orders appear here when supplies run low, or create one from Supplies</p>
+              <h3>Tidak ada pesanan {statusFilter !== "all" ? (statusFilter === 'pending' ? 'menunggu' : statusFilter === 'fulfilled' ? 'selesai' : 'dibatalkan') : ""}</h3>
+              <p>Pesanan muncul di sini saat stok menipis, atau buat pesanan baru dari menu Stok</p>
             </div>
           )}
 
@@ -307,12 +296,12 @@ export default function OrdersPage() {
                         {order.supply_name}
                       </p>
                       <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                        Qty: {order.quantity} · {new Date(order.ordered_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        Jml: {order.quantity} · {new Date(order.ordered_at).toLocaleDateString("id-ID", { month: "short", day: "numeric", year: "numeric" })}
                       </p>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
                       <span className={STATUS_BADGE[order.status]}>
-                        {STATUS_ICON[order.status]} {order.status.toUpperCase()}
+                        {STATUS_ICON[order.status]} {order.status === 'pending' ? 'MENUNGGU' : order.status === 'fulfilled' ? 'SELESAI' : 'DIBATALKAN'}
                       </span>
                       <ChevronRight size={16} color="var(--text-muted)"
                         style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
@@ -324,7 +313,7 @@ export default function OrdersPage() {
                         {order.status === "pending" ? (
                           <>
                             <div className="form-group" style={{ marginBottom: 0 }}>
-                              <label className="form-label" style={{ fontSize: 11 }}>Order Quantity *</label>
+                              <label className="form-label" style={{ fontSize: 11 }}>Jumlah Pesanan *</label>
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <input 
                                   type="number" 
@@ -338,11 +327,11 @@ export default function OrdersPage() {
                               </div>
                             </div>
                             <div className="form-group" style={{ marginBottom: 4 }}>
-                              <label className="form-label" style={{ fontSize: 11 }}>Fulfillment Notes</label>
+                              <label className="form-label" style={{ fontSize: 11 }}>Catatan Pemenuhan</label>
                               <textarea 
                                 className="form-textarea" 
                                 style={{ minHeight: 60, fontSize: 13 }}
-                                placeholder="Add notes here..."
+                                placeholder="Tambah catatan di sini..."
                                 value={pendingParams[order.id]?.notes ?? ""}
                                 onChange={(e) => updatePending(order.id, { notes: e.target.value })}
                               />
@@ -350,14 +339,14 @@ export default function OrdersPage() {
                           </>
                         ) : (
                           <>
-                            {order.notes && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Note: {order.notes}</p>}
+                            {order.notes && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Catatan: {order.notes}</p>}
                           </>
                         )}
                         
-                        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Ordered by {order.orderer_name}</p>
+                        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Dipesan oleh {order.orderer_name}</p>
                         {order.fulfilled_at && (
                           <p style={{ fontSize: 12, color: "var(--success)" }}>
-                            Fulfilled: {new Date(order.fulfilled_at).toLocaleDateString("en-US")}
+                            Selesai: {new Date(order.fulfilled_at).toLocaleDateString("id-ID")}
                           </p>
                         )}
                         {order.status === "pending" && (
@@ -368,7 +357,7 @@ export default function OrdersPage() {
                               disabled={actioning === order.id}
                               onClick={() => updateOrderStatus(order.id, "cancelled")}
                             >
-                              {actioning === order.id ? <span className="spinner" /> : <><X size={14} /> Cancel</>}
+                              {actioning === order.id ? <span className="spinner" /> : <><X size={14} /> Batal</>}
                             </button>
                             <button
                               className="btn btn-primary"
@@ -376,7 +365,7 @@ export default function OrdersPage() {
                               disabled={actioning === order.id || (pendingParams[order.id]?.quantity ?? 0) <= 0}
                               onClick={() => updateOrderStatus(order.id, "fulfilled")}
                             >
-                              {actioning === order.id ? <span className="spinner" /> : <><CheckCircle size={14} /> Mark Fulfilled</>}
+                              {actioning === order.id ? <span className="spinner" /> : <><CheckCircle size={14} /> Tandai Selesai</>}
                             </button>
                           </div>
                         )}
@@ -395,14 +384,14 @@ export default function OrdersPage() {
         <>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
-              Supply checklists for your print jobs
+              Daftar periksa stok untuk pekerjaan cetak Anda
             </p>
             <button
               className="btn btn-primary"
               style={{ padding: "8px 14px", fontSize: 13 }}
               onClick={openCreateRunSheet}
             >
-              <Plus size={14} /> New
+              <Plus size={14} /> Baru
             </button>
           </div>
 
@@ -410,10 +399,10 @@ export default function OrdersPage() {
           {!runsLoading && runs.length === 0 && (
             <div className="empty-state animate-in">
               <ClipboardList size={48} />
-              <h3>No print runs yet</h3>
-              <p>Create a checklist of supplies to bring for your next print job</p>
+              <h3>Belum ada rencana cetak</h3>
+              <p>Buat daftar periksa stok yang harus dibawa untuk pekerjaan cetak Anda berikutnya</p>
               <button className="btn btn-primary" onClick={openCreateRunSheet}>
-                <Plus size={15} /> New Print Run
+                <Plus size={15} /> Rencana Cetak Baru
               </button>
             </div>
           )}
@@ -443,9 +432,15 @@ export default function OrdersPage() {
                           <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                             <button
                               style={{ padding: 6, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}
-                              onClick={(e) => deleteRun(run.id, e)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm("Hapus rencana cetak ini?")) {
+                                  setDeletingRunId(run.id);
+                                  fetch(`/api/print-runs/${run.id}`, { method: "DELETE" }).then(() => fetchRuns());
+                                }
+                              }}
                               disabled={deletingRunId === run.id}
-                              aria-label="Delete run"
+                              aria-label="Hapus rencana"
                             >
                               {deletingRunId === run.id
                                 ? <span className="spinner" style={{ width: 14, height: 14 }} />
@@ -461,15 +456,15 @@ export default function OrdersPage() {
                           </span>
                         </div>
                         <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                          {new Date(run.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                          {" · "}{run.total_count} item{run.total_count !== 1 ? "s" : ""}
+                          {new Date(run.created_at).toLocaleDateString("id-ID", { month: "short", day: "numeric" })}
+                          {" · "}{run.total_count} item
                         </p>
                       </div>
                     </div>
                     {run.total_count > 0 && (
                       <div style={{ marginTop: 12 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                          <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>PACKED</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>DIKEMAS</span>
                           <span style={{ fontSize: 11, fontWeight: 700, color: pct === 100 ? "var(--success)" : "var(--primary)" }}>
                             {run.packed_count}/{run.total_count}
                           </span>
@@ -489,16 +484,16 @@ export default function OrdersPage() {
 
       {/* ── Create Print Run Sheet ──────────────────────────────────────── */}
       <div className={`sheet-overlay${sheet ? " open" : ""}`} onClick={() => setSheet(false)} aria-hidden="true" />
-      <div className={`bottom-sheet${sheet ? " open" : ""}`} role="dialog" aria-label="New Print Run" aria-modal="true">
+      <div className={`bottom-sheet${sheet ? " open" : ""}`} role="dialog" aria-label="Rencana Cetak Baru" aria-modal="true">
         <div className="sheet-handle" />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 className="sheet-title" style={{ marginBottom: 0 }}>New Print Run</h2>
-          <button className="btn-ghost" onClick={() => setSheet(false)} aria-label="Close"><X size={20} /></button>
+          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Rencana Cetak Baru</h2>
+          <button className="btn-ghost" onClick={() => setSheet(false)} aria-label="Tutup"><X size={20} /></button>
         </div>
         <form onSubmit={handleCreateRun}>
           {/* Run name */}
           <div className="form-group">
-            <label className="form-label" htmlFor="run-name">Run Name *</label>
+            <label className="form-label" htmlFor="run-name">Nama Rencana *</label>
             <input id="run-name" className="form-input" value={runName}
               onChange={(e) => setRunName(e.target.value)} required />
           </div>
@@ -507,13 +502,13 @@ export default function OrdersPage() {
           <div className="form-group">
             <label className="form-label" htmlFor="run-printer">Printer *</label>
             {printers.length === 0 ? (
-              <p style={{ fontSize: 13, color: "var(--text-muted)" }}>No printers yet — add one first</p>
+              <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Belum ada printer — tambah printer dulu</p>
             ) : (
               <select id="run-printer" className="form-select"
                 value={selectedPrinterId}
                 onChange={(e) => setSelectedPrinterId(Number(e.target.value))}
                 required>
-                <option value="">Select a printer…</option>
+                <option value="">Pilih printer…</option>
                 {printers.map((p) => (
                   <option key={p.id} value={p.id}>{p.name} ({p.location})</option>
                 ))}
@@ -522,9 +517,9 @@ export default function OrdersPage() {
           </div>
 
           {/* Supply items */}
-          <p className="section-title" style={{ marginBottom: 10 }}>Supplies to Bring</p>
+          <p className="section-title" style={{ marginBottom: 10 }}>Stok yang Harus Dibawa</p>
           {allSupplies.length === 0 ? (
-            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>No supplies yet.</p>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>Belum ada stok.</p>
           ) : (
             <div className="list-stack" style={{ marginBottom: 16, maxHeight: "35vh", overflowY: "auto" }}>
               {allSupplies.map((s) => {
@@ -545,7 +540,9 @@ export default function OrdersPage() {
                     </button>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>{s.name}</p>
-                      <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{s.type} · {s.unit}</p>
+                      <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                        {s.type === 'paper' ? 'Kertas' : s.type === 'cartridge' ? 'Kartrid' : s.type === 'ink' ? 'Tinta' : s.type === 'toner' ? 'Toner' : 'Lainnya'} · {s.unit}
+                      </p>
                     </div>
                     {item && (
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -568,10 +565,10 @@ export default function OrdersPage() {
           )}
 
           <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setSheet(false)}>Cancel</button>
+            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setSheet(false)}>Batal</button>
             <button type="submit" className="btn btn-primary" style={{ flex: 2 }}
               disabled={creatingRun || !runName || !selectedPrinterId}>
-              {creatingRun ? <span className="spinner" /> : <><ClipboardList size={15} /> Create &amp; Open</>}
+              {creatingRun ? <span className="spinner" /> : <><ClipboardList size={15} /> Buat &amp; Buka</>}
             </button>
           </div>
         </form>

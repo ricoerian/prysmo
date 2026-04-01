@@ -50,7 +50,7 @@ export default function SplashPage() {
       });
       const json = await res.json() as { error?: string };
       if (!res.ok) {
-        setError(json.error ?? "Invalid email or password");
+        setError(json.error ?? "Email atau kata sandi salah");
         return;
       }
       router.push("/dashboard");
@@ -358,12 +358,12 @@ export default function SplashPage() {
         {/* PRYSMO heading */}
         <div className={`splash-title-wrap${isAnimating || isLogin ? " hide" : ""}`}>
           <div className="splash-title-text">PRYSMO</div>
-          <div className="splash-title-sub">Printer Management</div>
+          <div className="splash-title-sub">Manajemen Printer</div>
         </div>
 
         {/* Tagline */}
         <div className={`splash-tagline${isAnimating || isLogin ? " hide" : ""}`}>
-          <p>Track supplies, manage orders &amp; print runs</p>
+          <p>Pantau stok, kelola pesanan & rencana cetak</p>
         </div>
 
         {/* Log In button */}
@@ -374,7 +374,7 @@ export default function SplashPage() {
             onClick={handleLoginClick}
           >
             <LogIn size={16} />
-            Log In
+            Masuk
           </button>
         </div>
 
@@ -389,11 +389,11 @@ export default function SplashPage() {
         {/* Login form overlay — sits above the dome when expanded */}
         <div className={`login-overlay${isLogin ? " visible" : ""}`}>
           <div className="login-logo">PRYSMO</div>
-          <div className="login-logo-sub">Printer Management</div>
+          <div className="login-logo-sub">Manajemen Printer</div>
 
           <div className="login-card">
-            <h2>Welcome back</h2>
-            <p>Sign in to continue</p>
+            <h2>Selamat datang kembali</h2>
+            <p>Masuk untuk melanjutkan</p>
 
             {error && <div className="lf-error">{error}</div>}
 
@@ -417,7 +417,7 @@ export default function SplashPage() {
               </div>
 
               <div className="lf-group">
-                <label className="lf-label" htmlFor="login-password">Password</label>
+                <label className="lf-label" htmlFor="login-password">Kata Sandi</label>
                 <div className="lf-input-wrap">
                   <Lock size={15} className="lf-icon" />
                   <input
@@ -436,7 +436,7 @@ export default function SplashPage() {
                     className="lf-eye"
                     onClick={() => setShowPassword((s) => !s)}
                     tabIndex={-1}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
                   >
                     {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
@@ -451,7 +451,7 @@ export default function SplashPage() {
               >
                 {isPending
                   ? <span className="spinner-sm" />
-                  : <><LogIn size={15} /> Sign In</>}
+                  : <><LogIn size={15} /> Masuk</>}
               </button>
             </form>
           </div>

@@ -22,9 +22,9 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  active:      "Active",
-  inactive:    "Inactive",
-  maintenance: "Maintenance",
+  active:      "Aktif",
+  inactive:    "Tidak Aktif",
+  maintenance: "Perbaikan",
 };
 
 interface FormState {
@@ -133,9 +133,9 @@ export default function PrintersPage() {
     <>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Printers</h1>
+          <h1 className="page-title">Printer</h1>
           <p className="page-subtitle">
-            {loading ? "Loading…" : `${printers.length} registered`}
+            {loading ? "Memuat…" : `${printers.length} terdaftar`}
           </p>
         </div>
       </div>
@@ -149,8 +149,8 @@ export default function PrintersPage() {
       {!loading && printers.length === 0 && (
         <div className="empty-state animate-in">
           <Printer size={48} />
-          <h3>No printers yet</h3>
-          <p>Tap the + button to add your first printer</p>
+          <h3>Belum ada printer</h3>
+          <p>Ketuk tombol + untuk menambah printer pertama Anda</p>
         </div>
       )}
 
@@ -202,14 +202,14 @@ export default function PrintersPage() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <Settings2 size={13} color="var(--primary)" />
-                  <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.5px", color: "var(--text-muted)" }}>CONSUMPTION SETTINGS</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.5px", color: "var(--text-muted)" }}>PENGATURAN KONSUMSI</span>
                 </div>
                 <button 
                   className="btn-ghost" 
                   style={{ fontSize: 11, padding: "2px 8px", background: "var(--primary-dim)", color: "var(--primary)" }}
                   onClick={() => setManagingSuppliesFor(managingSuppliesFor === p.id ? null : p.id)}
                 >
-                  {managingSuppliesFor === p.id ? "Cancel" : "Link Supply"}
+                  {managingSuppliesFor === p.id ? "Batal" : "Hubungkan Stok"}
                 </button>
               </div>
 
@@ -227,7 +227,7 @@ export default function PrintersPage() {
                     }}
                     value=""
                   >
-                    <option value="">Select a supply to link...</option>
+                    <option value="">Pilih stok untuk dihubungkan...</option>
                     {allSupplies
                       .filter(s => !p.supplies.some(ps => ps.supply_id === s.id))
                       .map(s => (
@@ -239,7 +239,7 @@ export default function PrintersPage() {
               )}
 
               {p.supplies.length === 0 ? (
-                <p style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>No linked supplies</p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>Tidak ada stok terhubung</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {p.supplies.map(ps => (
@@ -250,7 +250,7 @@ export default function PrintersPage() {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Usage:</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Konsumsi:</span>
                           <input 
                             type="number"
                             className="form-input"
@@ -264,7 +264,7 @@ export default function PrintersPage() {
                         <button 
                           onClick={() => updateUsage(p.id, ps.supply_id, 0, "unlink")}
                           style={{ border: "none", background: "none", cursor: "pointer", color: "var(--danger)", padding: 4 }}
-                          aria-label="Unlink supply"
+                          aria-label="Putus hubungan stok"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -287,13 +287,13 @@ export default function PrintersPage() {
       <div
         className={`bottom-sheet${sheetOpen ? " open" : ""}`}
         role="dialog"
-        aria-label="Add Printer"
+        aria-label="Tambah Printer"
         aria-modal="true"
       >
         <div className="sheet-handle" />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Add Printer</h2>
-          <button className="btn-ghost" onClick={closeSheet} aria-label="Close">
+          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Tambah Printer</h2>
+          <button className="btn-ghost" onClick={closeSheet} aria-label="Tutup">
             <X size={20} />
           </button>
         </div>
@@ -301,7 +301,7 @@ export default function PrintersPage() {
         <form onSubmit={handleSubmit}>
           {/* Photo upload */}
           <div className="form-group">
-            <label className="form-label">Photo (optional)</label>
+            <label className="form-label">Foto (opsional)</label>
             <div
               className="photo-upload-area"
               onClick={() => fileRef.current?.click()}
@@ -310,11 +310,11 @@ export default function PrintersPage() {
               onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
             >
               {form.photo_url ? (
-                <img src={form.photo_url} alt="Preview" className="photo-thumb" style={{ height: 100 }} />
+                <img src={form.photo_url} alt="Pratinjau" className="photo-thumb" style={{ height: 100 }} />
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: "var(--text-muted)" }}>
                   {uploadingPhoto ? <span className="spinner" /> : <ImageIcon size={24} />}
-                  <span style={{ fontSize: 13 }}>{uploadingPhoto ? "Uploading…" : "Tap to upload photo"}</span>
+                  <span style={{ fontSize: 13 }}>{uploadingPhoto ? "Mengunggah…" : "Ketuk untuk unggah foto"}</span>
                 </div>
               )}
               <input
@@ -327,11 +327,11 @@ export default function PrintersPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="printer-name">Printer Name *</label>
+            <label className="form-label" htmlFor="printer-name">Nama Printer *</label>
             <input
               id="printer-name"
               className="form-input"
-              placeholder="e.g. Office Printer A"
+              placeholder="misal: Printer Kantor A"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               required
@@ -339,7 +339,7 @@ export default function PrintersPage() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="form-group">
-              <label className="form-label" htmlFor="printer-brand">Brand</label>
+              <label className="form-label" htmlFor="printer-brand">Merek</label>
               <input
                 id="printer-brand"
                 className="form-input"
@@ -360,11 +360,11 @@ export default function PrintersPage() {
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="printer-location">Location</label>
+            <label className="form-label" htmlFor="printer-location">Lokasi</label>
             <input
               id="printer-location"
               className="form-input"
-              placeholder="Room 101"
+              placeholder="Ruangan 101"
               value={form.location}
               onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
             />
@@ -377,17 +377,17 @@ export default function PrintersPage() {
               value={form.status}
               onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="maintenance">Maintenance</option>
+              <option value="active">Aktif</option>
+              <option value="inactive">Tidak Aktif</option>
+              <option value="maintenance">Perbaikan</option>
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="printer-notes">Notes</label>
+            <label className="form-label" htmlFor="printer-notes">Catatan</label>
             <textarea
               id="printer-notes"
               className="form-textarea"
-              placeholder="Optional notes…"
+              placeholder="Catatan opsional…"
               value={form.notes}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             />
@@ -395,7 +395,7 @@ export default function PrintersPage() {
 
           <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
             <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={closeSheet}>
-              Cancel
+              Batal
             </button>
             <button
               type="submit"
@@ -404,7 +404,7 @@ export default function PrintersPage() {
               style={{ flex: 2 }}
               disabled={saving || !form.name}
             >
-              {saving ? <span className="spinner" /> : <><Plus size={16} /> Add Printer</>}
+              {saving ? <span className="spinner" /> : <><Plus size={16} /> Tambah Printer</>}
             </button>
           </div>
         </form>
