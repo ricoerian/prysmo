@@ -2,27 +2,34 @@ import { Pool } from "pg";
 import { parse } from "pg-connection-string";
 import bcrypt from "bcryptjs";
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not defined in environment variables");
+let _pool: Pool | null = null;
+
+export function getPool(): Pool {
+  if (!_pool) {
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      // If we're in build mode, we might not have the DB URL, but we shouldn't throw 
+      // at the top level. Throwing here only if someone actually tries to use the pool.
+      throw new Error("DATABASE_URL is not defined in environment variables");
+    }
+
+    const config = parse(connectionString);
+    _pool = new Pool({
+      host: config.host || undefined,
+      database: config.database || undefined,
+      user: config.user || undefined,
+      password: config.password || undefined,
+      port: config.port ? parseInt(config.port, 10) : undefined,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+      max: 10,
+    });
+  }
+  return _pool;
 }
 
-const config = parse(connectionString);
-
-// Cast the config to PoolConfig and handle null/undefined differences
-const pool = new Pool({
-  host: config.host || undefined,
-  database: config.database || undefined,
-  user: config.user || undefined,
-  password: config.password || undefined,
-  port: config.port ? parseInt(config.port, 10) : undefined,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-  max: 10,
-});
-
-export { pool };
+export { _pool as pool }; // For backward compatibility if needed, but getPool() is preferred
 
 /** Convenience wrapper — returns the QueryResult directly */
 export async function query<T extends object = Record<string, unknown>>(
@@ -30,7 +37,7 @@ export async function query<T extends object = Record<string, unknown>>(
   params?: unknown[]
 ) {
   try {
-    return await pool.query<T>(sql, params);
+    return await getPool().query<T>(sql, params);
   } catch (err) {
     console.error("DATABASE QUERY ERROR:", err);
     throw err;
@@ -52,7 +59,8 @@ export async function initDb(): Promise<void> {
 }
 
 async function initSchema(): Promise<void> {
-  await pool.query(`
+  const p = getPool();
+  await p.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
@@ -123,10 +131,10 @@ async function initSchema(): Promise<void> {
   `);
 
   // Seed admin user if the DB is freshly set up
-  const { rows } = await pool.query<{ c: string }>("SELECT COUNT(*) AS c FROM users");
+  const { rows } = await p.query<{ c: string }>("SELECT COUNT(*) AS c FROM users");
   if (parseInt(rows[0].c, 10) === 0) {
     const hash = await bcrypt.hash("password123", 10);
-    await pool.query(
+    await p.query(
       "INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4)",
       ["Administrator", "admin@prysmo.com", hash, "admin"]
     );

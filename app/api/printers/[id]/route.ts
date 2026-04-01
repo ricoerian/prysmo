@@ -1,4 +1,4 @@
-import { query, pool, initDb } from "@/app/_lib/db";
+import { query, getPool, initDb } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { Printer, Supply } from "@/app/_lib/types";
 
@@ -80,8 +80,7 @@ export async function PATCH(
   await initDb();
   const { id } = await ctx.params;
   const { supplyIds } = (await request.json()) as { supplyIds: number[] };
-
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     await client.query("BEGIN");
     await client.query("DELETE FROM printer_supplies WHERE printer_id = $1", [id]);

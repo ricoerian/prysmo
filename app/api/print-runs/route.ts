@@ -1,4 +1,4 @@
-import { query, pool, initDb } from "@/app/_lib/db";
+import { query, getPool, initDb } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { PrintRunWithDetails, PrintRunItem } from "@/app/_lib/types";
 
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Printer not found" }, { status: 404 });
     }
 
-    const client = await pool.connect();
+    const client = await getPool().connect();
     let runId: number;
     try {
       await client.query("BEGIN");
