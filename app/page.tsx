@@ -177,7 +177,7 @@ export default function SplashPage() {
           bottom: 0;
           left: 50%;
           width: 150vw;
-          height: 58vh;
+          height: 40vh;
           border-radius: 50% 50% 0 0 / 100% 100% 0 0;
           background: #dc2626;
           transform: translateX(-50%);
