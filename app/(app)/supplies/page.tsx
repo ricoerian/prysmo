@@ -224,12 +224,20 @@ export default function SuppliesPage() {
           const pct = Math.min(100, s.min_quantity > 0 ? Math.round((s.quantity / s.min_quantity) * 100) : 100);
           const level = pct >= 100 ? "ok" : pct >= 50 ? "warn" : "danger";
           return (
-            <button
+            <div
               key={s.id}
               id={`supply-card-${s.id}`}
               className={`card card-press animate-in stagger-${Math.min(i + 1, 4)}`}
               style={{ width: "100%", textAlign: "left", cursor: "pointer", padding: 0, overflow: "hidden" }}
               onClick={() => router.push(`/supplies/${s.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  router.push(`/supplies/${s.id}`);
+                }
+              }}
+              tabIndex={0}
+              role="button"
             >
               <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
                 {s.photo_url ? (
@@ -258,55 +266,66 @@ export default function SuppliesPage() {
                   <div className="stock-bar-wrap">
                     <div className={`stock-bar-fill ${level}`} style={{ width: `${pct}%` }} />
                   </div>
-                </div>
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
-                      <span style={{ fontSize: 18, fontWeight: 700, color: "var(--primary)" }}>
-                        {s.refill_requirement}
-                      </span>
-                      <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}> {s.unit}</span>
-                    </div>
-                    <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: -2, fontWeight: 500 }}>BAWA</p>
-                    
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
                     <div style={{ 
-                      marginTop: 4, 
                       fontSize: 10, 
-                      fontWeight: 600,
+                      fontWeight: 700, 
+                      color: "var(--text-secondary)",
+                      background: "var(--bg-input)",
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      border: "1px solid var(--border)"
+                    }}>
+                      BAWA {s.refill_requirement} {s.unit.toUpperCase()}
+                    </div>
+                    <div style={{ 
+                      fontSize: 10, 
+                      fontWeight: 700,
                       padding: "2px 6px",
                       borderRadius: 4,
                       background: (s.quantity - s.refill_requirement) < 0 ? "var(--danger-dim)" : "var(--success-dim)",
                       color: (s.quantity - s.refill_requirement) < 0 ? "var(--danger)" : "var(--success)"
                     }}>
                       {(s.quantity - s.refill_requirement) < 0 
-                        ? `${Math.abs(s.quantity - s.refill_requirement)} Kurang` 
-                        : `${s.quantity - s.refill_requirement} Sisa`}
+                        ? `${Math.abs(s.quantity - s.refill_requirement)} KURANG` 
+                        : `${s.quantity - s.refill_requirement} SISA`}
                     </div>
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8 }}>
+
+                <div style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  alignItems: "center", 
+                  gap: 2,
+                  padding: "4px 8px",
+                  background: "var(--bg-input)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border)",
+                  marginLeft: 12
+                }}>
                   <button 
                     className="btn-ghost" 
-                    style={{ padding: 6, color: "var(--text-muted)" }}
-                    onClick={(e) => { e.stopPropagation(); handleUpdateQuantity(s, -1); }}
-                    disabled={saving || s.quantity <= 0}
+                    style={{ padding: 4, color: "var(--primary)", border: "none", background: "none" }}
+                    onClick={(e) => { e.stopPropagation(); handleUpdateQuantity(s, 1); }}
+                    disabled={saving}
                   >
-                    <Minus size={16} />
+                    <Plus size={18} strokeWidth={3} />
                   </button>
-                  <span style={{ minWidth: 24, textAlign: "center", fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
+                  <span style={{ minWidth: 28, textAlign: "center", fontWeight: 800, fontSize: 16, color: "var(--text-primary)", lineHeight: 1 }}>
                     {s.quantity}
                   </span>
                   <button 
                     className="btn-ghost" 
-                    style={{ padding: 6, color: "var(--primary)" }}
-                    onClick={(e) => { e.stopPropagation(); handleUpdateQuantity(s, 1); }}
-                    disabled={saving}
+                    style={{ padding: 4, color: "var(--text-muted)", border: "none", background: "none" }}
+                    onClick={(e) => { e.stopPropagation(); handleUpdateQuantity(s, -1); }}
+                    disabled={saving || s.quantity <= 0}
                   >
-                    <Plus size={16} />
+                    <Minus size={18} strokeWidth={3} />
                   </button>
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
