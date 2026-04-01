@@ -227,7 +227,7 @@ export default function SplashPage() {
           color: white;
           letter-spacing: 0.18em;
           margin-bottom: 6px;
-          text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+          text-shadow: 0 4px 12px rgba(220,38,38,0.25);
         }
         .login-logo-sub {
           font-size: 11px;
@@ -243,7 +243,7 @@ export default function SplashPage() {
           background: white;
           border-radius: 24px;
           padding: 28px 24px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+          box-shadow: 0 20px 60px rgba(220,38,38,0.15);
         }
         .login-card h2 {
           font-size: 22px;
@@ -281,7 +281,7 @@ export default function SplashPage() {
         }
         .lf-input {
           width: 100%;
-          border: 1.5px solid #e5e5e5;
+          border: 1.5px solid rgba(220,38,38,0.12);
           border-radius: 12px;
           padding: 11px 14px 11px 40px;
           font-size: 15px;
