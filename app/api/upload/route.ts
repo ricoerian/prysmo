@@ -38,6 +38,14 @@ export async function POST(request: NextRequest) {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
+    // --- AUTO-HEALING: Ensure bucket exists ---
+    const { data: bucket, error: bucketError } = await supabase.storage.getBucket(BUCKET_NAME);
+    if (!bucket || bucketError) {
+      console.log(`Auto-healing: Creating missing bucket "${BUCKET_NAME}"`);
+      await supabase.storage.createBucket(BUCKET_NAME, { public: true });
+    }
+    // ------------------------------------------
+
     const { error } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(filename, buffer, {
@@ -46,7 +54,11 @@ export async function POST(request: NextRequest) {
       });
 
     if (error) {
-      throw error;
+      console.error("SUPABASE STORAGE ERROR:", error);
+      return Response.json({ 
+        error: `Upload failed: ${error.message} (Bucket: ${BUCKET_NAME})`,
+        details: error
+      }, { status: 500 });
     }
 
     // Return the public URL
@@ -55,8 +67,12 @@ export async function POST(request: NextRequest) {
       .getPublicUrl(filename);
 
     return Response.json({ url: publicUrl });
-  } catch (err) {
-    console.error("Upload error:", err);
-    return Response.json({ error: "Upload failed" }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("GENERIC UPLOAD ERROR:", error);
+    return Response.json({ 
+      error: "Internal server error during upload", 
+      message: error.message 
+    }, { status: 500 });
   }
 }
