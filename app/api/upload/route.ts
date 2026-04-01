@@ -1,10 +1,10 @@
 import { getSession } from "@/app/_lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+import { supabase } from "@/app/_lib/supabase";
 import { NextRequest } from "next/server";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE_MB = 5;
+const BUCKET_NAME = "prysmo";
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
@@ -32,17 +32,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-    const uploadDir = join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(join(uploadDir, filename), buffer);
+    const { error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(filename, buffer, {
+        contentType: file.type,
+        upsert: false,
+      });
 
-    return Response.json({ url: `/uploads/${filename}` });
+    if (error) {
+      throw error;
+    }
+
+    // Return the public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(filename);
+
+    return Response.json({ url: publicUrl });
   } catch (err) {
     console.error("Upload error:", err);
     return Response.json({ error: "Upload failed" }, { status: 500 });
