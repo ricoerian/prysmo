@@ -25,6 +25,7 @@ export interface Supply {
   sku: string | null;
   quantity: number;
   min_quantity: number;
+  default_order_quantity: number;
   unit: string;
   notes: string | null;
   photo_url: string | null;
@@ -34,6 +35,7 @@ export interface Supply {
 export interface PrinterSupply {
   printer_id: number;
   supply_id: number;
+  quantity_used: number;
 }
 
 export interface StockOrder {
@@ -87,7 +89,7 @@ export interface PrinterWithSupplies extends Printer {
 
 export interface SupplyWithPrinters extends Supply {
   is_low: boolean;
-  printers: Printer[];
+  printers: (Printer & { quantity_used: number })[];
 }
 
 export interface PrintRunWithDetails extends PrintRun {

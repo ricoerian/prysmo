@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
   try {
     await initDb();
-    const { name, type, sku, quantity, min_quantity, unit, notes, photo_url } = await request.json();
+    const { name, type, sku, quantity, min_quantity, default_order_quantity, unit, notes, photo_url } = await request.json();
     if (!name || quantity === undefined || min_quantity === undefined) {
       return Response.json(
         { error: "name, quantity, min_quantity are required" },
@@ -32,10 +32,10 @@ export async function POST(request: Request) {
     }
 
     const { rows } = await query<Supply>(
-      `INSERT INTO supplies (name, type, sku, quantity, min_quantity, unit, notes, photo_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO supplies (name, type, sku, quantity, min_quantity, default_order_quantity, unit, notes, photo_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [name, type ?? "other", sku ?? null, quantity, min_quantity, unit ?? "pcs", notes ?? null, photo_url ?? null]
+      [name, type ?? "other", sku ?? null, quantity, min_quantity, default_order_quantity ?? 10, unit ?? "pcs", notes ?? null, photo_url ?? null]
     );
     const supply = rows[0];
 
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       await query(
         `INSERT INTO stock_orders (supply_id, quantity, status, notes, ordered_by)
          VALUES ($1, $2, 'pending', 'Auto-generated: stock below minimum threshold', $3)`,
-        [supply.id, min_quantity - quantity + min_quantity, session.userId]
+        [supply.id, default_order_quantity ?? 10, session.userId]
       );
     }
 

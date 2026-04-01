@@ -90,6 +90,7 @@ async function initSchema(): Promise<void> {
       sku TEXT,
       quantity INTEGER NOT NULL DEFAULT 0,
       min_quantity INTEGER NOT NULL DEFAULT 5,
+      default_order_quantity INTEGER NOT NULL DEFAULT 10,
       unit TEXT NOT NULL DEFAULT 'pcs',
       notes TEXT,
       photo_url TEXT,
@@ -99,8 +100,13 @@ async function initSchema(): Promise<void> {
     CREATE TABLE IF NOT EXISTS printer_supplies (
       printer_id INTEGER NOT NULL REFERENCES printers(id) ON DELETE CASCADE,
       supply_id INTEGER NOT NULL REFERENCES supplies(id) ON DELETE CASCADE,
+      quantity_used INTEGER NOT NULL DEFAULT 1,
       PRIMARY KEY (printer_id, supply_id)
     );
+
+    -- Migration for existing environments
+    ALTER TABLE supplies ADD COLUMN IF NOT EXISTS default_order_quantity INTEGER NOT NULL DEFAULT 10;
+    ALTER TABLE printer_supplies ADD COLUMN IF NOT EXISTS quantity_used INTEGER NOT NULL DEFAULT 1;
 
     CREATE TABLE IF NOT EXISTS stock_orders (
       id SERIAL PRIMARY KEY,

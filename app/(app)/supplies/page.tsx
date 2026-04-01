@@ -26,13 +26,13 @@ const TYPE_BADGE: Record<string, string> = {
 
 interface FormState {
   name: string; type: string; sku: string;
-  quantity: number; min_quantity: number; unit: string;
-  notes: string; photo_url: string;
+  quantity: number; min_quantity: number; default_order_quantity: number;
+  unit: string; notes: string; photo_url: string;
 }
 
 const EMPTY_FORM: FormState = {
   name: "", type: "other", sku: "", quantity: 0,
-  min_quantity: 5, unit: "pcs", notes: "", photo_url: "",
+  min_quantity: 5, default_order_quantity: 10, unit: "pcs", notes: "", photo_url: "",
 };
 
 export default function SuppliesPage() {
@@ -44,6 +44,8 @@ export default function SuppliesPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [quickOrderSheet, setQuickOrderSheet] = useState<SupplyWithStatus | null>(null);
+  const [quickOrderQty, setQuickOrderQty] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchSupplies = useCallback(async () => {
@@ -92,6 +94,33 @@ export default function SuppliesPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleQuickOrder(e: React.FormEvent) {
+    e.preventDefault();
+    if (!quickOrderSheet) return;
+    setSaving(true);
+    try {
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          supply_id: quickOrderSheet.id, 
+          quantity: quickOrderQty,
+          notes: "Quick restock from list" 
+        }),
+      });
+      setQuickOrderSheet(null);
+      router.push("/orders");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openQuickOrder(e: React.MouseEvent, supply: SupplyWithStatus) {
+    e.stopPropagation();
+    setQuickOrderSheet(supply);
+    setQuickOrderQty(supply.default_order_quantity || 10);
   }
 
   const lowCount = supplies.filter((s) => s.is_low).length;
@@ -190,6 +219,13 @@ export default function SuppliesPage() {
                   </span>
                   <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 2 }}>{s.unit}</span>
                 </div>
+                <button 
+                  className="btn-ghost" 
+                  style={{ marginLeft: 8, padding: 8, color: "var(--primary)" }}
+                  onClick={(e) => openQuickOrder(e, s)}
+                >
+                  <Plus size={20} />
+                </button>
               </div>
             </button>
           );
@@ -256,6 +292,11 @@ export default function SuppliesPage() {
                 value={form.min_quantity} onChange={(e) => setForm((f) => ({ ...f, min_quantity: parseInt(e.target.value) || 0 }))} required />
             </div>
             <div className="form-group">
+              <label className="form-label" htmlFor="supply-order-qty">Default Order</label>
+              <input id="supply-order-qty" type="number" className="form-input" min={1}
+                value={form.default_order_quantity} onChange={(e) => setForm((f) => ({ ...f, default_order_quantity: parseInt(e.target.value) || 1 }))} required />
+            </div>
+            <div className="form-group">
               <label className="form-label" htmlFor="supply-unit">Unit</label>
               <input id="supply-unit" className="form-input" placeholder="pcs"
                 value={form.unit} onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))} />
@@ -273,6 +314,33 @@ export default function SuppliesPage() {
             </button>
           </div>
         </form>
+      </div>
+      {/* Quick Order Sheet */}
+      <div className={`sheet-overlay${quickOrderSheet ? " open" : ""}`} onClick={() => setQuickOrderSheet(null)} aria-hidden="true" />
+      <div className={`bottom-sheet${quickOrderSheet ? " open" : ""}`} role="dialog" aria-modal="true">
+        <div className="sheet-handle" />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Quick Restock</h2>
+          <button className="btn-ghost" onClick={() => setQuickOrderSheet(null)} aria-label="Close"><X size={20} /></button>
+        </div>
+        {quickOrderSheet && (
+          <form onSubmit={handleQuickOrder}>
+            <div style={{ marginBottom: 16, background: "var(--primary-dim)", padding: 12, borderRadius: 8 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--primary-dark)" }}>{quickOrderSheet.name}</p>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Order Quantity</label>
+              <input type="number" className="form-input" min={1} value={quickOrderQty}
+                onChange={(e) => setQuickOrderQty(parseInt(e.target.value) || 1)} required autoFocus />
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+              <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setQuickOrderSheet(null)}>Cancel</button>
+              <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={saving}>
+                {saving ? <span className="spinner" /> : "Place Order"}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </>
   );
