@@ -1,4 +1,4 @@
-import { getDb } from "@/app/_lib/db";
+import { query, pool, initDb } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { Printer, Supply } from "@/app/_lib/types";
 
@@ -9,20 +9,20 @@ export async function GET(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  await initDb();
   const { id } = await ctx.params;
-  const db = getDb();
-  const printer = db.prepare("SELECT * FROM printers WHERE id = ?").get(id) as Printer | undefined;
-  if (!printer) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const supplies = db
-    .prepare(
-      `SELECT s.* FROM supplies s
-       JOIN printer_supplies ps ON ps.supply_id = s.id
-       WHERE ps.printer_id = ?`
-    )
-    .all(id) as Supply[];
+  const printerRes = await query<Printer>("SELECT * FROM printers WHERE id = $1", [id]);
+  if (printerRes.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
 
-  return Response.json({ data: { ...printer, supplies } });
+  const suppliesRes = await query<Supply>(
+    `SELECT s.* FROM supplies s
+     JOIN printer_supplies ps ON ps.supply_id = s.id
+     WHERE ps.printer_id = $1`,
+    [id]
+  );
+
+  return Response.json({ data: { ...printerRes.rows[0], supplies: suppliesRes.rows } });
 }
 
 export async function PUT(
@@ -32,19 +32,21 @@ export async function PUT(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  await initDb();
   const { id } = await ctx.params;
-  const db = getDb();
-  const existing = db.prepare("SELECT id FROM printers WHERE id = ?").get(id);
-  if (!existing) return Response.json({ error: "Not found" }, { status: 404 });
+  const existing = await query("SELECT id FROM printers WHERE id = $1", [id]);
+  if (existing.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
 
   try {
     const { name, model, brand, location, status, notes, photo_url } = await request.json();
-    db.prepare(
-      `UPDATE printers SET name=?, model=?, brand=?, location=?, status=?, notes=?, photo_url=? WHERE id=?`
-    ).run(name, model, brand, location, status, notes ?? null, photo_url ?? null, id);
-
-    const printer = db.prepare("SELECT * FROM printers WHERE id = ?").get(id) as Printer;
-    return Response.json({ data: printer });
+    const { rows } = await query<Printer>(
+      `UPDATE printers
+       SET name=$1, model=$2, brand=$3, location=$4, status=$5, notes=$6, photo_url=$7
+       WHERE id=$8
+       RETURNING *`,
+      [name, model, brand, location, status, notes ?? null, photo_url ?? null, id]
+    );
+    return Response.json({ data: rows[0] });
   } catch (err) {
     console.error(err);
     return Response.json({ error: "Internal server error" }, { status: 500 });
@@ -58,16 +60,16 @@ export async function DELETE(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  await initDb();
   const { id } = await ctx.params;
-  const db = getDb();
-  const existing = db.prepare("SELECT id FROM printers WHERE id = ?").get(id);
-  if (!existing) return Response.json({ error: "Not found" }, { status: 404 });
+  const existing = await query("SELECT id FROM printers WHERE id = $1", [id]);
+  if (existing.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
 
-  db.prepare("DELETE FROM printers WHERE id = ?").run(id);
+  await query("DELETE FROM printers WHERE id = $1", [id]);
   return Response.json({ data: { success: true } });
 }
 
-// Link/unlink supplies
+/** Link/unlink supplies — runs in a transaction */
 export async function PATCH(
   request: Request,
   ctx: RouteContext<"/api/printers/[id]">
@@ -75,21 +77,28 @@ export async function PATCH(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  await initDb();
   const { id } = await ctx.params;
-  const { supplyIds } = await request.json() as { supplyIds: number[] };
+  const { supplyIds } = (await request.json()) as { supplyIds: number[] };
 
-  const db = getDb();
-  // Replace all links for this printer
-  const replace = db.transaction(() => {
-    db.prepare("DELETE FROM printer_supplies WHERE printer_id = ?").run(id);
-    const insert = db.prepare(
-      "INSERT OR IGNORE INTO printer_supplies (printer_id, supply_id) VALUES (?, ?)"
-    );
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("DELETE FROM printer_supplies WHERE printer_id = $1", [id]);
     for (const sid of supplyIds) {
-      insert.run(id, sid);
+      await client.query(
+        "INSERT INTO printer_supplies (printer_id, supply_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [id, sid]
+      );
     }
-  });
-  replace();
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
+  } finally {
+    client.release();
+  }
 
   return Response.json({ data: { success: true } });
 }

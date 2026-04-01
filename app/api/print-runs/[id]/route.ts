@@ -1,52 +1,32 @@
-import { getDb } from "@/app/_lib/db";
+import { query, initDb } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
-import type { PrintRunWithDetails } from "@/app/_lib/types";
+import type { PrintRunWithDetails, PrintRunItem } from "@/app/_lib/types";
 
-type RawItem = {
-  id: number;
-  run_id: number;
-  supply_id: number;
-  quantity_needed: number;
-  is_packed: number; // SQLite stores as 0/1
-  supply_name: string;
-  supply_type: string;
-  supply_unit: string;
-  supply_photo_url: string | null;
-};
+type RawRun = Omit<PrintRunWithDetails, "items" | "packed_count" | "total_count">;
 
-function getRunWithItems(
-  db: ReturnType<typeof getDb>,
-  id: string | number
-): PrintRunWithDetails | null {
-  const run = db
-    .prepare(
-      `SELECT pr.*, p.name as printer_name, p.location as printer_location
-       FROM print_runs pr
-       JOIN printers p ON p.id = pr.printer_id
-       WHERE pr.id = ?`
-    )
-    .get(id) as Omit<PrintRunWithDetails, "items" | "packed_count" | "total_count"> | undefined;
+async function getRunWithItems(id: string | number): Promise<PrintRunWithDetails | null> {
+  const runRes = await query<RawRun>(
+    `SELECT pr.*, p.name AS printer_name, p.location AS printer_location
+     FROM print_runs pr
+     JOIN printers p ON p.id = pr.printer_id
+     WHERE pr.id = $1`,
+    [id]
+  );
+  if (runRes.rows.length === 0) return null;
 
-  if (!run) return null;
+  const itemsRes = await query<PrintRunItem>(
+    `SELECT pri.*, s.name AS supply_name, s.type AS supply_type,
+            s.unit AS supply_unit, s.photo_url AS supply_photo_url
+     FROM print_run_items pri
+     JOIN supplies s ON s.id = pri.supply_id
+     WHERE pri.run_id = $1
+     ORDER BY pri.id ASC`,
+    [id]
+  );
 
-  const rawItems = db
-    .prepare(
-      `SELECT pri.*, s.name as supply_name, s.type as supply_type,
-              s.unit as supply_unit, s.photo_url as supply_photo_url
-       FROM print_run_items pri
-       JOIN supplies s ON s.id = pri.supply_id
-       WHERE pri.run_id = ?
-       ORDER BY pri.id ASC`
-    )
-    .all(id) as RawItem[];
-
-  const items = rawItems.map((i) => ({
-    ...i,
-    is_packed: i.is_packed === 1,
-  }));
-
+  const items = itemsRes.rows;
   return {
-    ...run,
+    ...runRes.rows[0],
     items,
     packed_count: items.filter((i) => i.is_packed).length,
     total_count: items.length,
@@ -60,9 +40,9 @@ export async function GET(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  await initDb();
   const { id } = await ctx.params;
-  const db = getDb();
-  const run = getRunWithItems(db, id);
+  const run = await getRunWithItems(id);
 
   if (!run) return Response.json({ error: "Not found" }, { status: 404 });
   return Response.json({ data: run });
@@ -76,22 +56,23 @@ export async function PATCH(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  await initDb();
   const { id } = await ctx.params;
-  const db = getDb();
-  const run = db.prepare("SELECT id FROM print_runs WHERE id = ?").get(id);
-  if (!run) return Response.json({ error: "Not found" }, { status: 404 });
+  const run = await query("SELECT id FROM print_runs WHERE id = $1", [id]);
+  if (run.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
 
   try {
     const body = (await request.json()) as { item_id?: number; is_packed?: boolean };
     const { item_id, is_packed } = body;
 
     if (item_id !== undefined && is_packed !== undefined) {
-      db.prepare(
-        "UPDATE print_run_items SET is_packed = ? WHERE id = ? AND run_id = ?"
-      ).run(is_packed ? 1 : 0, item_id, id);
+      await query(
+        "UPDATE print_run_items SET is_packed = $1 WHERE id = $2 AND run_id = $3",
+        [is_packed, item_id, id]
+      );
     }
 
-    const updated = getRunWithItems(db, id);
+    const updated = await getRunWithItems(id);
     return Response.json({ data: updated });
   } catch (err) {
     console.error(err);
@@ -106,11 +87,11 @@ export async function DELETE(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  await initDb();
   const { id } = await ctx.params;
-  const db = getDb();
-  const run = db.prepare("SELECT id FROM print_runs WHERE id = ?").get(id);
-  if (!run) return Response.json({ error: "Not found" }, { status: 404 });
+  const run = await query("SELECT id FROM print_runs WHERE id = $1", [id]);
+  if (run.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
 
-  db.prepare("DELETE FROM print_runs WHERE id = ?").run(id);
+  await query("DELETE FROM print_runs WHERE id = $1", [id]);
   return Response.json({ data: { success: true } });
 }

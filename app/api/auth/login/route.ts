@@ -1,20 +1,22 @@
-import { getDb } from "@/app/_lib/db";
+import { query, initDb } from "@/app/_lib/db";
 import { setSessionCookie } from "@/app/_lib/auth";
 import bcrypt from "bcryptjs";
 import type { User } from "@/app/_lib/types";
 
 export async function POST(request: Request) {
   try {
+    await initDb();
     const { email, password } = await request.json();
 
     if (!email || !password) {
       return Response.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    const db = getDb();
-    const user = db
-      .prepare("SELECT * FROM users WHERE email = ?")
-      .get(email) as User & { password_hash: string } | undefined;
+    const { rows } = await query<User & { password_hash: string }>(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
+    );
+    const user = rows[0];
 
     if (!user) {
       return Response.json({ error: "Invalid credentials" }, { status: 401 });

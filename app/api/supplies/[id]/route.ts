@@ -1,4 +1,4 @@
-import { getDb } from "@/app/_lib/db";
+import { query, initDb } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { Supply, Printer } from "@/app/_lib/types";
 
@@ -9,21 +9,26 @@ export async function GET(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  await initDb();
   const { id } = await ctx.params;
-  const db = getDb();
-  const supply = db.prepare("SELECT * FROM supplies WHERE id = ?").get(id) as Supply | undefined;
-  if (!supply) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const printers = db
-    .prepare(
-      `SELECT p.* FROM printers p
-       JOIN printer_supplies ps ON ps.printer_id = p.id
-       WHERE ps.supply_id = ?`
-    )
-    .all(id) as Printer[];
+  const supplyRes = await query<Supply>("SELECT * FROM supplies WHERE id = $1", [id]);
+  if (supplyRes.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
+  const supply = supplyRes.rows[0];
+
+  const printersRes = await query<Printer>(
+    `SELECT p.* FROM printers p
+     JOIN printer_supplies ps ON ps.printer_id = p.id
+     WHERE ps.supply_id = $1`,
+    [id]
+  );
 
   return Response.json({
-    data: { ...supply, is_low: supply.quantity <= supply.min_quantity, printers },
+    data: {
+      ...supply,
+      is_low: supply.quantity <= supply.min_quantity,
+      printers: printersRes.rows,
+    },
   });
 }
 
@@ -34,32 +39,36 @@ export async function PUT(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  await initDb();
   const { id } = await ctx.params;
-  const db = getDb();
-  const existing = db.prepare("SELECT * FROM supplies WHERE id = ?").get(id) as Supply | undefined;
-  if (!existing) return Response.json({ error: "Not found" }, { status: 404 });
+
+  const existingRes = await query<Supply>("SELECT * FROM supplies WHERE id = $1", [id]);
+  if (existingRes.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
+  const existing = existingRes.rows[0];
 
   try {
     const { name, type, sku, quantity, min_quantity, unit, notes, photo_url } = await request.json();
-    db.prepare(
-      `UPDATE supplies SET name=?, type=?, sku=?, quantity=?, min_quantity=?, unit=?, notes=?, photo_url=? WHERE id=?`
-    ).run(name, type, sku ?? null, quantity, min_quantity, unit, notes ?? null, photo_url ?? null, id);
-
-    const supply = db.prepare("SELECT * FROM supplies WHERE id = ?").get(id) as Supply;
+    const { rows } = await query<Supply>(
+      `UPDATE supplies
+       SET name=$1, type=$2, sku=$3, quantity=$4, min_quantity=$5, unit=$6, notes=$7, photo_url=$8
+       WHERE id=$9
+       RETURNING *`,
+      [name, type, sku ?? null, quantity, min_quantity, unit, notes ?? null, photo_url ?? null, id]
+    );
+    const supply = rows[0];
 
     // Auto-create a pending order if stock dropped below minimum
     if (quantity <= min_quantity && existing.quantity > existing.min_quantity) {
-      const openOrder = db
-        .prepare(
-          "SELECT id FROM stock_orders WHERE supply_id = ? AND status = 'pending' LIMIT 1"
-        )
-        .get(id);
-
-      if (!openOrder) {
-        db.prepare(
+      const openOrder = await query(
+        "SELECT id FROM stock_orders WHERE supply_id = $1 AND status = 'pending' LIMIT 1",
+        [id]
+      );
+      if (openOrder.rows.length === 0) {
+        await query(
           `INSERT INTO stock_orders (supply_id, quantity, status, notes, ordered_by)
-           VALUES (?, ?, 'pending', 'Auto-generated: stock below minimum threshold', ?)`
-        ).run(id, min_quantity * 2, session.userId);
+           VALUES ($1, $2, 'pending', 'Auto-generated: stock below minimum threshold', $3)`,
+          [id, min_quantity * 2, session.userId]
+        );
       }
     }
 
@@ -77,11 +86,11 @@ export async function DELETE(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  await initDb();
   const { id } = await ctx.params;
-  const db = getDb();
-  const existing = db.prepare("SELECT id FROM supplies WHERE id = ?").get(id);
-  if (!existing) return Response.json({ error: "Not found" }, { status: 404 });
+  const existing = await query("SELECT id FROM supplies WHERE id = $1", [id]);
+  if (existing.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
 
-  db.prepare("DELETE FROM supplies WHERE id = ?").run(id);
+  await query("DELETE FROM supplies WHERE id = $1", [id]);
   return Response.json({ data: { success: true } });
 }
