@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Printer, MapPin, CheckCircle, AlertTriangle, ChevronRight, Image as ImageIcon, Plus, X, Package, Settings2, Trash2 } from "lucide-react";
 import type { Printer as PrinterType, SupplyWithStatus } from "@/app/_lib/types";
 
@@ -42,6 +43,7 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function PrintersPage() {
+  const router = useRouter();
   const [printers, setPrinters] = useState<PrinterWithSupplies[]>([]);
   const [allSupplies, setAllSupplies] = useState<SupplyWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,7 +161,11 @@ export default function PrintersPage() {
             className={`card animate-in stagger-${Math.min(i + 1, 4)}`}
             style={{ width: "100%", padding: 0, overflow: "hidden" }}
           >
-            <div style={{ display: "flex" }}>
+            <div 
+              style={{ display: "flex", cursor: "pointer" }}
+              onClick={() => router.push(`/printers/${p.id}`)}
+              className="card-press"
+            >
               {p.photo_url && (
                 <img src={p.photo_url} alt={p.name} className="photo-thumb" style={{ width: 100, height: "auto" }} />
               )}
