@@ -46,6 +46,8 @@ export default function SuppliesPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [quickOrderSheet, setQuickOrderSheet] = useState<SupplyWithStatus | null>(null);
   const [quickOrderQty, setQuickOrderQty] = useState(0);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchSupplies = useCallback(async () => {
@@ -124,7 +126,17 @@ export default function SuppliesPage() {
   }
 
   const lowCount = supplies.filter((s) => s.is_low).length;
-  const visible = filter === "low" ? supplies.filter((s) => s.is_low) : supplies;
+  const visible = supplies.filter(s => {
+    const matchesStatus = filter === "low" ? s.is_low : true;
+    const matchesType = selectedTypes.length === 0 || selectedTypes.includes(s.type);
+    return matchesStatus && matchesType;
+  });
+
+  const toggleType = (type: string) => {
+    setSelectedTypes(prev => 
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
+  };
 
   return (
     <>
@@ -135,7 +147,20 @@ export default function SuppliesPage() {
             {loading ? "Memuat…" : `${supplies.length} item · ${lowCount} rendah`}
           </p>
         </div>
-        <Filter size={18} color="var(--text-muted)" />
+        <button 
+          className="btn-ghost" 
+          onClick={() => setFilterSheetOpen(true)}
+          aria-label="Filter"
+          style={{ padding: 8, color: selectedTypes.length > 0 ? "var(--primary)" : "var(--text-muted)" }}
+        >
+          <Filter size={18} />
+          {selectedTypes.length > 0 && (
+            <span style={{ 
+              position: "absolute", top: 4, right: 4, width: 8, height: 8, 
+              background: "var(--primary)", borderRadius: "50%", border: "2px solid white" 
+            }} />
+          )}
+        </button>
       </div>
 
       {lowCount > 0 && (
@@ -362,6 +387,76 @@ export default function SuppliesPage() {
             </div>
           </form>
         )}
+      </div>
+
+      {/* Filter Bottom Sheet */}
+      <div className={`sheet-overlay${filterSheetOpen ? " open" : ""}`} onClick={() => setFilterSheetOpen(false)} aria-hidden="true" />
+      <div className={`bottom-sheet${filterSheetOpen ? " open" : ""}`} role="dialog" aria-label="Pilihan Filter" aria-modal="true">
+        <div className="sheet-handle" />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Filter Stok</h2>
+          <button className="btn-ghost" onClick={() => setFilterSheetOpen(false)} aria-label="Tutup"><X size={20} /></button>
+        </div>
+
+        <div className="form-group" style={{ marginBottom: 24 }}>
+          <label className="form-label">Tingkat Stok</label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button 
+              className={`btn ${filter === "all" ? "btn-primary" : "btn-secondary"}`}
+              style={{ flex: 1, padding: "8px 12px", fontSize: 13 }}
+              onClick={() => setFilter("all")}
+            >
+              Semua
+            </button>
+            <button 
+              className={`btn ${filter === "low" ? "btn-primary" : "btn-secondary"}`}
+              style={{ flex: 1, padding: "8px 12px", fontSize: 13 }}
+              onClick={() => setFilter("low")}
+            >
+              <AlertTriangle size={14} style={{ marginRight: 4 }} /> Stok Rendah
+            </button>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Kategori Stok</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {Object.keys(TYPE_ICONS).map((type) => {
+              const isActive = selectedTypes.includes(type);
+              const labelMap: Record<string, string> = {
+                paper: 'Kertas', cartridge: 'Kartrid', ink: 'Tinta', toner: 'Toner', other: 'Lainnya'
+              };
+              return (
+                <button
+                  key={type}
+                  className={`btn ${isActive ? "btn-primary" : "btn-secondary"}`}
+                  style={{ padding: "8px 16px", fontSize: 13, borderRadius: 12 }}
+                  onClick={() => toggleType(type)}
+                >
+                  {isActive && <div style={{ width: 6, height: 6, background: "white", borderRadius: "50%", marginRight: 6 }} />}
+                  {labelMap[type] || type}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 12, marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 20 }}>
+          <button 
+            className="btn-ghost" 
+            style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "var(--text-muted)" }}
+            onClick={() => { setSelectedTypes([]); setFilter("all"); }}
+          >
+            Bersihkan Filter
+          </button>
+          <button 
+            className="btn btn-primary" 
+            style={{ flex: 1 }}
+            onClick={() => setFilterSheetOpen(false)}
+          >
+            Lihat {visible.length} Hasil
+          </button>
+        </div>
       </div>
     </>
   );
