@@ -202,7 +202,7 @@ export default function PrintersPage() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <Settings2 size={13} color="var(--primary)" />
-                  <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.5px", color: "var(--text-muted)" }}>PENGATURAN KONSUMSI</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.5px", color: "var(--text-muted)" }}>STOCK MATERIAL</span>
                 </div>
                 <button 
                   className="btn-ghost" 
@@ -250,7 +250,7 @@ export default function PrintersPage() {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Konsumsi:</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Stock:</span>
                           <input 
                             type="number"
                             className="form-input"
