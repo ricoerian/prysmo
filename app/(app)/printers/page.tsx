@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Printer, MapPin, CheckCircle, AlertTriangle, ChevronRight, Image as ImageIcon, Plus, X, Package, Settings2, Trash2 } from "lucide-react";
+import { Printer, MapPin, CheckCircle, AlertTriangle, ChevronRight, Image as ImageIcon, Plus, X, Package, Settings2, Trash2, Filter, Search } from "lucide-react";
 import type { Printer as PrinterType, SupplyWithStatus } from "@/app/_lib/types";
 
 interface PrinterWithSupplies extends PrinterType {
@@ -52,6 +52,9 @@ export default function PrintersPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [managingSuppliesFor, setManagingSuppliesFor] = useState<number | null>(null);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [filter, setFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchPrinters = useCallback(async () => {
@@ -129,6 +132,16 @@ export default function PrintersPage() {
     }
   }
 
+  const visiblePrinters = printers.filter(p => {
+    const matchesStatus = filter === "all" ? true : p.status === filter;
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = p.name.toLowerCase().includes(q) || 
+                          p.brand.toLowerCase().includes(q) || 
+                          p.model.toLowerCase().includes(q) ||
+                          p.location.toLowerCase().includes(q);
+    return matchesStatus && matchesSearch;
+  });
+
   return (
     <>
       <div className="page-header">
@@ -138,6 +151,44 @@ export default function PrintersPage() {
             {loading ? "Memuat…" : `${printers.length} terdaftar`}
           </p>
         </div>
+        <button 
+          className="btn-ghost" 
+          onClick={() => setFilterSheetOpen(true)}
+          aria-label="Filter"
+          style={{ padding: 8, color: filter !== "all" ? "var(--primary)" : "var(--text-muted)" }}
+        >
+          <Filter size={18} />
+          {filter !== "all" && (
+            <span style={{ 
+              position: "absolute", top: 4, right: 4, width: 8, height: 8, 
+              background: "var(--primary)", borderRadius: "50%", border: "2px solid white" 
+            }} />
+          )}
+        </button>
+      </div>
+
+      {/* Search Input */}
+      <div style={{ position: "relative", marginBottom: 16 }}>
+        <Search 
+          size={18} 
+          style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} 
+        />
+        <input
+          type="text"
+          className="form-input"
+          placeholder="Cari printer, merek, atau lokasi..."
+          style={{ paddingLeft: 40 }}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <button 
+            onClick={() => setSearchQuery("")}
+            style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", color: "var(--text-muted)", cursor: "pointer" }}
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
 
       {loading && (
@@ -154,8 +205,16 @@ export default function PrintersPage() {
         </div>
       )}
 
+      {!loading && printers.length > 0 && visiblePrinters.length === 0 && (
+        <div className="empty-state animate-in">
+          <Search size={48} />
+          <h3>Tidak ditemukan</h3>
+          <p>Coba kata kunci atau filter lain</p>
+        </div>
+      )}
+
       <div className="list-stack">
-        {printers.map((p, i) => (
+        {visiblePrinters.map((p, i) => (
           <div
             key={p.id}
             className={`card animate-in stagger-${Math.min(i + 1, 4)}`}
@@ -408,6 +467,56 @@ export default function PrintersPage() {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Filter Bottom Sheet */}
+      <div className={`sheet-overlay${filterSheetOpen ? " open" : ""}`} onClick={() => setFilterSheetOpen(false)} aria-hidden="true" />
+      <div className={`bottom-sheet${filterSheetOpen ? " open" : ""}`} role="dialog" aria-label="Pilihan Filter" aria-modal="true">
+        <div className="sheet-handle" />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Filter Printer</h2>
+          <button className="btn-ghost" onClick={() => setFilterSheetOpen(false)} aria-label="Tutup"><X size={20} /></button>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Status Printer</label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <button 
+              className={`btn ${filter === "all" ? "btn-primary" : "btn-secondary"}`}
+              style={{ padding: "8px 12px", fontSize: 13 }}
+              onClick={() => setFilter("all")}
+            >
+              Semua
+            </button>
+            {Object.entries(STATUS_LABEL).map(([val, label]) => (
+              <button 
+                key={val}
+                className={`btn ${filter === val ? "btn-primary" : "btn-secondary"}`}
+                style={{ padding: "8px 12px", fontSize: 13 }}
+                onClick={() => setFilter(val)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 12, marginTop: 24, borderTop: "1px solid var(--border)", paddingTop: 20 }}>
+          <button 
+            className="btn-ghost" 
+            style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "var(--text-muted)" }}
+            onClick={() => { setFilter("all"); setSearchQuery(""); }}
+          >
+            Bersihkan
+          </button>
+          <button 
+            className="btn btn-primary" 
+            style={{ flex: 1 }}
+            onClick={() => setFilterSheetOpen(false)}
+          >
+            Selesai
+          </button>
+        </div>
       </div>
     </>
   );

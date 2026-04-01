@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Package, FileText, Droplets, Box, AlertTriangle, ChevronRight,
-  Image as ImageIcon, Plus, X, Filter,
+  Image as ImageIcon, Plus, X, Filter, Search,
 } from "lucide-react";
 import type { SupplyWithStatus } from "@/app/_lib/types";
 
@@ -48,6 +48,7 @@ export default function SuppliesPage() {
   const [quickOrderQty, setQuickOrderQty] = useState(0);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchSupplies = useCallback(async () => {
@@ -129,7 +130,9 @@ export default function SuppliesPage() {
   const visible = supplies.filter(s => {
     const matchesStatus = filter === "low" ? s.is_low : true;
     const matchesType = selectedTypes.length === 0 || selectedTypes.includes(s.type);
-    return matchesStatus && matchesType;
+    const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (s.sku && s.sku.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesStatus && matchesType && matchesSearch;
   });
 
   const toggleType = (type: string) => {
@@ -161,6 +164,30 @@ export default function SuppliesPage() {
             }} />
           )}
         </button>
+      </div>
+
+      {/* Search Input */}
+      <div style={{ position: "relative", marginBottom: 16 }}>
+        <Search 
+          size={18} 
+          style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} 
+        />
+        <input
+          type="text"
+          className="form-input"
+          placeholder="Cari nama atau SKU..."
+          style={{ paddingLeft: 40 }}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <button 
+            onClick={() => setSearchQuery("")}
+            style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", color: "var(--text-muted)", cursor: "pointer" }}
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
 
       {lowCount > 0 && (
