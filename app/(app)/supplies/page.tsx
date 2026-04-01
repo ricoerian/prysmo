@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Package, FileText, Droplets, Box, AlertTriangle, ChevronRight,
-  Image as ImageIcon, Plus, X, Filter, Search,
+  Image as ImageIcon, Plus, Minus, X, Filter, Search,
 } from "lucide-react";
 import type { SupplyWithStatus } from "@/app/_lib/types";
 
@@ -44,8 +44,6 @@ export default function SuppliesPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [quickOrderSheet, setQuickOrderSheet] = useState<SupplyWithStatus | null>(null);
-  const [quickOrderQty, setQuickOrderQty] = useState(0);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -99,32 +97,26 @@ export default function SuppliesPage() {
     }
   }
 
-  async function handleQuickOrder(e: React.FormEvent) {
-    e.preventDefault();
-    if (!quickOrderSheet) return;
+  async function handleUpdateQuantity(supply: SupplyWithStatus, delta: number) {
     setSaving(true);
     try {
-      await fetch("/api/orders", {
-        method: "POST",
+      const newQuantity = Math.max(0, supply.quantity + delta);
+      const res = await fetch(`/api/supplies/${supply.id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          supply_id: quickOrderSheet.id, 
-          quantity: quickOrderQty,
-          notes: "Quick restock from list" 
+        body: JSON.stringify({
+          ...supply,
+          quantity: newQuantity,
         }),
       });
-      setQuickOrderSheet(null);
-      router.push("/orders");
+      if (res.ok) {
+        await fetchSupplies();
+      }
     } finally {
       setSaving(false);
     }
   }
 
-  function openQuickOrder(e: React.MouseEvent, supply: SupplyWithStatus) {
-    e.stopPropagation();
-    setQuickOrderSheet(supply);
-    setQuickOrderQty(supply.default_order_quantity || 10);
-  }
 
   const lowCount = supplies.filter((s) => s.is_low).length;
   const visible = supplies.filter(s => {
@@ -292,13 +284,24 @@ export default function SuppliesPage() {
                     </div>
                   </div>
                 </div>
-                <button 
-                  className="btn-ghost" 
-                  style={{ marginLeft: 8, padding: 8, color: "var(--primary)" }}
-                  onClick={(e) => openQuickOrder(e, s)}
-                >
-                  <Plus size={20} />
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8 }}>
+                  <button 
+                    className="btn-ghost" 
+                    style={{ padding: 6, color: "var(--text-muted)" }}
+                    onClick={(e) => { e.stopPropagation(); handleUpdateQuantity(s, -1); }}
+                    disabled={saving || s.quantity <= 0}
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <button 
+                    className="btn-ghost" 
+                    style={{ padding: 6, color: "var(--primary)" }}
+                    onClick={(e) => { e.stopPropagation(); handleUpdateQuantity(s, 1); }}
+                    disabled={saving}
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
               </div>
             </button>
           );
@@ -387,33 +390,6 @@ export default function SuppliesPage() {
             </button>
           </div>
         </form>
-      </div>
-      {/* Quick Order Sheet */}
-      <div className={`sheet-overlay${quickOrderSheet ? " open" : ""}`} onClick={() => setQuickOrderSheet(null)} aria-hidden="true" />
-      <div className={`bottom-sheet${quickOrderSheet ? " open" : ""}`} role="dialog" aria-modal="true">
-        <div className="sheet-handle" />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Isi Stok Cepat</h2>
-          <button className="btn-ghost" onClick={() => setQuickOrderSheet(null)} aria-label="Tutup"><X size={20} /></button>
-        </div>
-        {quickOrderSheet && (
-          <form onSubmit={handleQuickOrder}>
-            <div style={{ marginBottom: 16, background: "var(--primary-dim)", padding: 12, borderRadius: 8 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--primary-dark)" }}>{quickOrderSheet.name}</p>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Jumlah Pesanan</label>
-              <input type="number" className="form-input" min={1} value={quickOrderQty}
-                onChange={(e) => setQuickOrderQty(parseInt(e.target.value) || 1)} required autoFocus />
-            </div>
-            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-              <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setQuickOrderSheet(null)}>Batal</button>
-              <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={saving}>
-                {saving ? <span className="spinner" /> : "Buat Pesanan"}
-              </button>
-            </div>
-          </form>
-        )}
       </div>
 
       {/* Filter Bottom Sheet */}
