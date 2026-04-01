@@ -1,17 +1,20 @@
 import { query, initDb } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
-import type { Supply } from "@/app/_lib/types";
+import type { Supply, SupplyWithStatus } from "@/app/_lib/types";
 
 export async function GET() {
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   await initDb();
-  const { rows } = await query<Supply & { is_low: boolean }>(
-    `SELECT *,
-            CASE WHEN quantity <= min_quantity THEN TRUE ELSE FALSE END AS is_low
-     FROM supplies
-     ORDER BY created_at ASC`
+  const { rows } = await query<SupplyWithStatus>(
+    `SELECT s.*,
+            CASE WHEN s.quantity <= s.min_quantity THEN TRUE ELSE FALSE END AS is_low,
+            COALESCE(SUM(ps.quantity_used), 0) as refill_requirement
+     FROM supplies s
+     LEFT JOIN printer_supplies ps ON ps.supply_id = s.id
+     GROUP BY s.id
+     ORDER BY s.created_at ASC`
   );
 
   return Response.json({ data: rows });

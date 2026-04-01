@@ -214,10 +214,29 @@ export default function SuppliesPage() {
                   </div>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: s.is_low ? "var(--danger)" : "var(--text-primary)" }}>
-                    {s.quantity}
-                  </span>
-                  <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 2 }}>{s.unit}</span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+                      <span style={{ fontSize: 18, fontWeight: 700, color: "var(--primary)" }}>
+                        {s.refill_requirement}
+                      </span>
+                      <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}> {s.unit}</span>
+                    </div>
+                    <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: -2, fontWeight: 500 }}>TO BRING</p>
+                    
+                    <div style={{ 
+                      marginTop: 4, 
+                      fontSize: 10, 
+                      fontWeight: 600,
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      background: (s.quantity - s.refill_requirement) < 0 ? "var(--danger-dim)" : "var(--success-dim)",
+                      color: (s.quantity - s.refill_requirement) < 0 ? "var(--danger)" : "var(--success)"
+                    }}>
+                      {(s.quantity - s.refill_requirement) < 0 
+                        ? `${Math.abs(s.quantity - s.refill_requirement)} Short` 
+                        : `${s.quantity - s.refill_requirement} Extra`}
+                    </div>
+                  </div>
                 </div>
                 <button 
                   className="btn-ghost" 

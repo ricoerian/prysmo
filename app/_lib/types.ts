@@ -74,6 +74,7 @@ export interface PrintRunItem {
 export interface SupplyWithStatus extends Supply {
   is_low: boolean;
   linked_printers?: number;
+  refill_requirement: number;
 }
 
 export interface OrderWithDetails extends StockOrder {
