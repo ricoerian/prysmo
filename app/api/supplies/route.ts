@@ -11,7 +11,7 @@ export async function GET() {
     `SELECT *,
             CASE WHEN quantity <= min_quantity THEN TRUE ELSE FALSE END AS is_low
      FROM supplies
-     ORDER BY name ASC`
+     ORDER BY created_at ASC`
   );
 
   return Response.json({ data: rows });

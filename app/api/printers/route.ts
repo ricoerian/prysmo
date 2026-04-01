@@ -9,7 +9,7 @@ export async function GET() {
   await initDb();
   
   // Get all printers
-  const printersRes = await query<Printer>("SELECT * FROM printers ORDER BY created_at DESC");
+  const printersRes = await query<Printer>("SELECT * FROM printers ORDER BY created_at ASC");
   const printers = printersRes.rows;
 
   // Get all printer supply links with supply details
