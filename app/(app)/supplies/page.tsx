@@ -293,6 +293,9 @@ export default function SuppliesPage() {
                   >
                     <Minus size={16} />
                   </button>
+                  <span style={{ minWidth: 24, textAlign: "center", fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>
+                    {s.quantity}
+                  </span>
                   <button 
                     className="btn-ghost" 
                     style={{ padding: 6, color: "var(--primary)" }}
