@@ -1,9 +1,24 @@
 import { Pool } from "pg";
+import { parse } from "pg-connection-string";
 import bcrypt from "bcryptjs";
 
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not defined in environment variables");
+}
+
+const config = parse(connectionString);
+
+// Cast the config to PoolConfig and handle null/undefined differences
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  host: config.host || undefined,
+  database: config.database || undefined,
+  user: config.user || undefined,
+  password: config.password || undefined,
+  port: config.port ? parseInt(config.port, 10) : undefined,
+  ssl: {
+    rejectUnauthorized: false,
+  },
   max: 10,
 });
 
@@ -14,7 +29,12 @@ export async function query<T extends object = Record<string, unknown>>(
   sql: string,
   params?: unknown[]
 ) {
-  return pool.query<T>(sql, params);
+  try {
+    return await pool.query<T>(sql, params);
+  } catch (err) {
+    console.error("DATABASE QUERY ERROR:", err);
+    throw err;
+  }
 }
 
 let _initialized = false;
@@ -22,7 +42,13 @@ let _initialized = false;
 export async function initDb(): Promise<void> {
   if (_initialized) return;
   _initialized = true;
-  await initSchema();
+  try {
+    await initSchema();
+  } catch (err) {
+    console.error("DATABASE INITIALIZATION ERROR:", err);
+    _initialized = false; // Allow retry on next request if it failed
+    throw err;
+  }
 }
 
 async function initSchema(): Promise<void> {
