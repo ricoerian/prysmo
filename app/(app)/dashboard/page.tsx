@@ -88,7 +88,6 @@ export default function DashboardPage() {
           className="btn-ghost"
           onClick={handleLogout}
           aria-label="Logout"
-          style={{ padding: 8, color: "var(--text-muted)" }}
         >
           <LogOut size={20} />
         </button>

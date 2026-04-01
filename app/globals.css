@@ -515,11 +515,19 @@ body {
   background: transparent;
   color: var(--text-muted);
   padding: 8px;
+  border: 1.5px solid var(--primary-dim);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .btn-ghost:hover {
   color: var(--primary);
   background: var(--primary-dim);
+  border-color: var(--primary);
 }
 
 .btn-full { width: 100%; }
