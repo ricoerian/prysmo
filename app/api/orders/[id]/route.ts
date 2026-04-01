@@ -1,6 +1,6 @@
-import { query, initDb } from "@/app/_lib/db";
+import { query, initDb, getPool } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
-import type { OrderWithDetails } from "@/app/_lib/types";
+import type { OrderWithDetails, StockOrder } from "@/app/_lib/types";
 
 const ORDER_SELECT = `
   SELECT so.*, s.name AS supply_name, s.type AS supply_type,
@@ -35,19 +35,47 @@ export async function PATCH(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
-  const existing = await query("SELECT id FROM stock_orders WHERE id = $1", [id]);
-  if (existing.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
+  const pool = getPool();
+  const client = await pool.connect();
 
   try {
+    await initDb();
     const { status, notes } = await request.json();
+
+    // Fetch existing order to check transition to fulfilled
+    const existingRes = await client.query<StockOrder>(
+      "SELECT status, supply_id, quantity FROM stock_orders WHERE id = $1",
+      [id]
+    );
+
+    if (existingRes.rows.length === 0) {
+      client.release();
+      return Response.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const oldOrder = existingRes.rows[0];
+    const isTransitioningToFulfilled = status === "fulfilled" && oldOrder.status !== "fulfilled";
+
+    await client.query("BEGIN");
+
     const fulfilled_at = status === "fulfilled" ? new Date().toISOString() : null;
 
-    await query(
+    // Update the order
+    await client.query(
       `UPDATE stock_orders SET status=$1, notes=$2, fulfilled_at=$3 WHERE id=$4`,
       [status, notes ?? null, fulfilled_at, id]
     );
+
+    // If fulfilled, increment stock
+    if (isTransitioningToFulfilled) {
+      await client.query(
+        "UPDATE supplies SET quantity = quantity + $1 WHERE id = $2",
+        [oldOrder.quantity, oldOrder.supply_id]
+      );
+    }
+
+    await client.query("COMMIT");
 
     const { rows } = await query<OrderWithDetails>(
       `${ORDER_SELECT} WHERE so.id = $1`,
@@ -55,8 +83,11 @@ export async function PATCH(
     );
     return Response.json({ data: rows[0] });
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error(err);
     return Response.json({ error: "Internal server error" }, { status: 500 });
+  } finally {
+    client.release();
   }
 }
 
