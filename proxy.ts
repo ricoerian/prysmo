@@ -8,7 +8,7 @@ const PUBLIC_PATHS = [
   "/api/upload",
 ];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public API paths
