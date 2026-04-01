@@ -53,6 +53,7 @@ export async function initDb(): Promise<void> {
     await initSchema();
   } catch (err) {
     console.error("DATABASE INITIALIZATION ERROR:", err);
+    console.error("Check if DATABASE_URL is correct and Supabase allows connections from this environment.");
     _initialized = false; // Allow retry on next request if it failed
     throw err;
   }
