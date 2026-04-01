@@ -42,6 +42,7 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [actioning, setActioning] = useState<number | null>(null);
+  const [pendingParams, setPendingParams] = useState<Record<number, { quantity: number; notes: string }>>({});
 
   // ─── Print runs state ───────────────────────────────────────────────────
   const [runs, setRuns] = useState<PrintRunWithDetails[]>([]);
@@ -104,16 +105,39 @@ export default function OrdersPage() {
   // ─── Order actions ──────────────────────────────────────────────────────
   async function updateOrderStatus(id: number, status: "fulfilled" | "cancelled") {
     setActioning(id);
+    const params = pendingParams[id] || {};
     try {
       await fetch(`/api/orders/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ 
+          status,
+          quantity: params.quantity,
+          notes: params.notes,
+        }),
       });
       await fetchOrders();
     } finally {
       setActioning(null);
     }
+  }
+
+  function handleExpanded(id: number) {
+    const order = orders.find(o => o.id === id);
+    if (order && !pendingParams[id]) {
+      setPendingParams(prev => ({
+        ...prev,
+        [id]: { quantity: order.quantity, notes: order.notes || "" }
+      }));
+    }
+    setExpandedOrderId(expandedOrderId === id ? null : id);
+  }
+
+  function updatePending(id: number, updates: Partial<{ quantity: number; notes: string }>) {
+    setPendingParams(prev => ({
+      ...prev,
+      [id]: { ...prev[id], ...updates }
+    }));
   }
 
   // ─── Print Run actions ──────────────────────────────────────────────────
@@ -269,7 +293,7 @@ export default function OrdersPage() {
                   <button
                     id={`order-card-${order.id}`}
                     style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, width: "100%", textAlign: "left" }}
-                    onClick={() => setExpandedOrderId(isOpen ? null : order.id)}
+                    onClick={() => handleExpanded(order.id)}
                   >
                     {order.supply_photo_url ? (
                       <img src={order.supply_photo_url} alt={order.supply_name} className="photo-thumb-sm" />
@@ -296,8 +320,40 @@ export default function OrdersPage() {
                   </button>
                   {isOpen && (
                     <div style={{ padding: "0 16px 16px", borderTop: "1px solid var(--border)" }}>
-                      <div style={{ paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                        {order.notes && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Note: {order.notes}</p>}
+                      <div style={{ paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                        {order.status === "pending" ? (
+                          <>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label className="form-label" style={{ fontSize: 11 }}>Order Quantity *</label>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <input 
+                                  type="number" 
+                                  className="form-input" 
+                                  min={0}
+                                  style={{ flex: 1 }}
+                                  value={pendingParams[order.id]?.quantity ?? 0}
+                                  onChange={(e) => updatePending(order.id, { quantity: parseInt(e.target.value) || 0 })}
+                                />
+                                <span style={{ fontSize: 13, color: "var(--text-muted)", minWidth: 40 }}>{order.supply_unit}</span>
+                              </div>
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 4 }}>
+                              <label className="form-label" style={{ fontSize: 11 }}>Fulfillment Notes</label>
+                              <textarea 
+                                className="form-textarea" 
+                                style={{ minHeight: 60, fontSize: 13 }}
+                                placeholder="Add notes here..."
+                                value={pendingParams[order.id]?.notes ?? ""}
+                                onChange={(e) => updatePending(order.id, { notes: e.target.value })}
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {order.notes && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Note: {order.notes}</p>}
+                          </>
+                        )}
+                        
                         <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Ordered by {order.orderer_name}</p>
                         {order.fulfilled_at && (
                           <p style={{ fontSize: 12, color: "var(--success)" }}>
@@ -317,7 +373,7 @@ export default function OrdersPage() {
                             <button
                               className="btn btn-primary"
                               style={{ flex: 2, padding: "8px 12px", fontSize: 13 }}
-                              disabled={actioning === order.id}
+                              disabled={actioning === order.id || (pendingParams[order.id]?.quantity ?? 0) <= 0}
                               onClick={() => updateOrderStatus(order.id, "fulfilled")}
                             >
                               {actioning === order.id ? <span className="spinner" /> : <><CheckCircle size={14} /> Mark Fulfilled</>}

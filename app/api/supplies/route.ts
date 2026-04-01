@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       await query(
         `INSERT INTO stock_orders (supply_id, quantity, status, notes, ordered_by)
          VALUES ($1, $2, 'pending', 'Auto-generated: stock below minimum threshold', $3)`,
-        [supply.id, default_order_quantity ?? 10, session.userId]
+        [supply.id, 0, session.userId]
       );
     }
 

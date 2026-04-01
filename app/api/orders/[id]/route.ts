@@ -3,7 +3,7 @@ import { getSession } from "@/app/_lib/auth";
 import type { OrderWithDetails, StockOrder } from "@/app/_lib/types";
 
 const ORDER_SELECT = `
-  SELECT so.*, s.name AS supply_name, s.type AS supply_type,
+  SELECT so.*, s.name AS supply_name, s.type AS supply_type, s.unit AS supply_unit,
          s.photo_url AS supply_photo_url, u.name AS orderer_name
   FROM stock_orders so
   JOIN supplies s ON s.id = so.supply_id
@@ -41,7 +41,7 @@ export async function PATCH(
 
   try {
     await initDb();
-    const { status, notes } = await request.json();
+    const { status, notes, quantity } = await request.json();
 
     // Fetch existing order to check transition to fulfilled
     const existingRes = await client.query<StockOrder>(
@@ -55,23 +55,24 @@ export async function PATCH(
     }
 
     const oldOrder = existingRes.rows[0];
+    const newQuantity = quantity !== undefined ? quantity : oldOrder.quantity;
     const isTransitioningToFulfilled = status === "fulfilled" && oldOrder.status !== "fulfilled";
 
     await client.query("BEGIN");
 
     const fulfilled_at = status === "fulfilled" ? new Date().toISOString() : null;
 
-    // Update the order
+    // Update the order (including quantity if provided)
     await client.query(
-      `UPDATE stock_orders SET status=$1, notes=$2, fulfilled_at=$3 WHERE id=$4`,
-      [status, notes ?? null, fulfilled_at, id]
+      `UPDATE stock_orders SET status=$1, notes=$2, fulfilled_at=$3, quantity=$4 WHERE id=$5`,
+      [status, notes ?? null, fulfilled_at, newQuantity, id]
     );
 
     // If fulfilled, increment stock
     if (isTransitioningToFulfilled) {
       await client.query(
         "UPDATE supplies SET quantity = quantity + $1 WHERE id = $2",
-        [oldOrder.quantity, oldOrder.supply_id]
+        [newQuantity, oldOrder.supply_id]
       );
     }
 

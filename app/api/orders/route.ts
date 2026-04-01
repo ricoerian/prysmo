@@ -3,7 +3,7 @@ import { getSession } from "@/app/_lib/auth";
 import type { OrderWithDetails } from "@/app/_lib/types";
 
 const ORDER_SELECT = `
-  SELECT so.*, s.name AS supply_name, s.type AS supply_type,
+  SELECT so.*, s.name AS supply_name, s.type AS supply_type, s.unit AS supply_unit,
          s.photo_url AS supply_photo_url, u.name AS orderer_name
   FROM stock_orders so
   JOIN supplies s ON s.id = so.supply_id
@@ -28,8 +28,8 @@ export async function POST(request: Request) {
   try {
     await initDb();
     const { supply_id, quantity, notes } = await request.json();
-    if (!supply_id || !quantity) {
-      return Response.json({ error: "supply_id and quantity are required" }, { status: 400 });
+    if (!supply_id) {
+      return Response.json({ error: "supply_id is required" }, { status: 400 });
     }
 
     const supply = await query("SELECT id FROM supplies WHERE id = $1", [supply_id]);

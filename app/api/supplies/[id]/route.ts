@@ -67,7 +67,7 @@ export async function PUT(
         await query(
           `INSERT INTO stock_orders (supply_id, quantity, status, notes, ordered_by)
            VALUES ($1, $2, 'pending', 'Auto-generated: stock below minimum threshold', $3)`,
-          [id, default_order_quantity ?? 10, session.userId]
+          [id, 0, session.userId]
         );
       }
     }

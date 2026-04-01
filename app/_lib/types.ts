@@ -79,6 +79,7 @@ export interface SupplyWithStatus extends Supply {
 export interface OrderWithDetails extends StockOrder {
   supply_name: string;
   supply_type: string;
+  supply_unit: string;
   supply_photo_url: string | null;
   orderer_name: string;
 }
