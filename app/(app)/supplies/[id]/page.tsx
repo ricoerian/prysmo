@@ -290,7 +290,7 @@ export default function SupplyDetailPage() {
                 onChange={(e) => setEditForm((f) => ({ ...f, min_quantity: parseInt(e.target.value) || 0 }))} required />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="edit-order">Pesan Standar</label>
+              <label className="form-label" htmlFor="edit-order">Standar Pesanan</label>
               <input id="edit-order" type="number" className="form-input" min={1}
                 value={editForm.default_order_quantity}
                 onChange={(e) => setEditForm((f) => ({ ...f, default_order_quantity: parseInt(e.target.value) || 1 }))} required />

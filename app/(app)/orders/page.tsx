@@ -194,7 +194,7 @@ export default function OrdersPage() {
           <p className="page-subtitle">
             {tab === "orders"
               ? `${pendingCount} menunggu · ${orders.length} total`
-              : `${runs.length} rencana cetak`}
+              : `${runs.length} rencana stok`}
           </p>
         </div>
       </div>
@@ -224,7 +224,7 @@ export default function OrdersPage() {
           style={{ flex: 1, gap: 6 }}
           onClick={() => setTab("printruns")}
         >
-          <ClipboardList size={15} /> Rencana Cetak
+          <ClipboardList size={15} /> Rencana Stok
           {runs.length > 0 && (
             <span style={{
               background: tab === "printruns" ? "rgba(255,255,255,0.25)" : "var(--primary-dim)",
@@ -399,10 +399,10 @@ export default function OrdersPage() {
           {!runsLoading && runs.length === 0 && (
             <div className="empty-state animate-in">
               <ClipboardList size={48} />
-              <h3>Belum ada rencana cetak</h3>
+              <h3>Belum ada rencana stok</h3>
               <p>Buat daftar periksa stok yang harus dibawa untuk pekerjaan cetak Anda berikutnya</p>
               <button className="btn btn-primary" onClick={openCreateRunSheet}>
-                <Plus size={15} /> Rencana Cetak Baru
+                <Plus size={15} /> Rencana Stok Baru
               </button>
             </div>
           )}
@@ -434,7 +434,7 @@ export default function OrdersPage() {
                               style={{ padding: 6, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm("Hapus rencana cetak ini?")) {
+                                if (confirm("Hapus rencana stok ini?")) {
                                   setDeletingRunId(run.id);
                                   fetch(`/api/print-runs/${run.id}`, { method: "DELETE" }).then(() => fetchRuns());
                                 }
@@ -484,10 +484,10 @@ export default function OrdersPage() {
 
       {/* ── Create Print Run Sheet ──────────────────────────────────────── */}
       <div className={`sheet-overlay${sheet ? " open" : ""}`} onClick={() => setSheet(false)} aria-hidden="true" />
-      <div className={`bottom-sheet${sheet ? " open" : ""}`} role="dialog" aria-label="Rencana Cetak Baru" aria-modal="true">
+      <div className={`bottom-sheet${sheet ? " open" : ""}`} role="dialog" aria-label="Rencana Stok Baru" aria-modal="true">
         <div className="sheet-handle" />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Rencana Cetak Baru</h2>
+          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Rencana Stok Baru</h2>
           <button className="btn-ghost" onClick={() => setSheet(false)} aria-label="Tutup"><X size={20} /></button>
         </div>
         <form onSubmit={handleCreateRun}>

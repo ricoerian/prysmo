@@ -313,7 +313,7 @@ export default function SuppliesPage() {
                 value={form.min_quantity} onChange={(e) => setForm((f) => ({ ...f, min_quantity: parseInt(e.target.value) || 0 }))} required />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="supply-order-qty">Pesan Standar</label>
+              <label className="form-label" htmlFor="supply-order-qty">Standar Pesanan</label>
               <input id="supply-order-qty" type="number" className="form-input" min={1}
                 value={form.default_order_quantity} onChange={(e) => setForm((f) => ({ ...f, default_order_quantity: parseInt(e.target.value) || 1 }))} required />
             </div>

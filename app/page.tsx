@@ -363,7 +363,7 @@ export default function SplashPage() {
 
         {/* Tagline */}
         <div className={`splash-tagline${isAnimating || isLogin ? " hide" : ""}`}>
-          <p>Pantau stok, kelola pesanan & rencana cetak</p>
+          <p>Pantau stok, kelola pesanan & rencana stok</p>
         </div>
 
         {/* Log In button */}
