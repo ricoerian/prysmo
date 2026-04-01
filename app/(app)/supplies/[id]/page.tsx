@@ -4,9 +4,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   ArrowLeft, Package, FileText, Droplets, Box, AlertTriangle,
-  Printer, Edit2, ShoppingCart, X, Plus, Settings
+  Printer, Edit2, ShoppingCart, X, Plus
 } from "lucide-react";
-import type { SupplyWithPrinters, Printer as PrinterType } from "@/app/_lib/types";
+import type { SupplyWithPrinters } from "@/app/_lib/types";
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   paper:     <FileText size={20} />,
@@ -30,14 +30,13 @@ export default function SupplyDetailPage() {
 
   const [supply, setSupply] = useState<SupplyWithPrinters | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sheet, setSheet] = useState<"edit" | "order" | "printers" | null>(null);
+  const [sheet, setSheet] = useState<"edit" | "order" | null>(null);
   const [editForm, setEditForm] = useState({
     name: "", type: "", sku: "", quantity: 0, min_quantity: 0,
     default_order_quantity: 10, unit: "", notes: "", photo_url: "",
   });
   const [orderQty, setOrderQty] = useState(0);
   const [orderNotes, setOrderNotes] = useState("");
-  const [allPrinters, setAllPrinters] = useState<(PrinterType & { is_linked: boolean; quantity_used: number })[]>([]);
   const [saving, setSaving] = useState(false);
 
   const fetchSupply = useCallback(async () => {
@@ -67,58 +66,6 @@ export default function SupplyDetailPage() {
     setSheet("order");
   }
 
-  async function openPrinters() {
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/supplies/${id}/printers`);
-      const json = await res.json();
-      setAllPrinters(json.data ?? []);
-      setSheet("printers");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function togglePrinter(printerId: number, isLinked: boolean, currentQty: number) {
-    setSaving(true);
-    try {
-      await fetch(`/api/supplies/${id}/printers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          printer_id: printerId, 
-          action: isLinked ? "unlink" : "link",
-          quantity_used: currentQty || 1
-        }),
-      });
-      // Refresh list
-      const res = await fetch(`/api/supplies/${id}/printers`);
-      const json = await res.json();
-      setAllPrinters(json.data ?? []);
-      await fetchSupply();
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function updateUsageQty(printerId: number, newQty: number) {
-    setSaving(true);
-    try {
-      await fetch(`/api/supplies/${id}/printers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          printer_id: printerId, 
-          action: "update",
-          quantity_used: newQty
-        }),
-      });
-      await fetchSupply();
-      // Optional: update local allPrinters state for smoothness
-    } finally {
-      setSaving(false);
-    }
-  }
 
   async function saveEdit(e: React.FormEvent) {
     e.preventDefault();
@@ -261,9 +208,6 @@ export default function SupplyDetailPage() {
           <p className="section-title" style={{ marginBottom: 0 }}>
             Used by ({supply.printers.length} printer{supply.printers.length !== 1 ? "s" : ""})
           </p>
-          <button className="btn-ghost" style={{ fontSize: 13, color: "var(--primary)" }} onClick={openPrinters}>
-            <Settings size={14} /> Manage
-          </button>
         </div>
         {supply.printers.length === 0 ? (
           <div className="card" style={{ textAlign: "center", padding: "20px 16px", color: "var(--text-muted)", fontSize: 13 }}>
@@ -399,47 +343,6 @@ export default function SupplyDetailPage() {
             </button>
           </div>
         </form>
-      </div>
-      {/* Printer Connections Sheet */}
-      <div className={`bottom-sheet${sheet === "printers" ? " open" : ""}`} role="dialog" aria-modal="true">
-        <div className="sheet-handle" />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Printer Connections</h2>
-          <button className="btn-ghost" onClick={() => setSheet(null)} aria-label="Close"><X size={20} /></button>
-        </div>
-        <div className="list-stack" style={{ maxHeight: "60vh", overflowY: "auto", paddingBottom: 20 }}>
-          {allPrinters.map((p) => (
-            <div key={p.id} className="card" style={{ display: "flex", alignItems: "center", gap: 12, border: p.is_linked ? "1px solid var(--primary-dim)" : "1px solid transparent", opacity: p.is_linked ? 1 : 0.7 }}>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>{p.name}</p>
-                <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{p.brand} {p.model}</p>
-              </div>
-              {p.is_linked && (
-                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <label style={{ fontSize: 10, color: "var(--text-muted)" }}>QTY:</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    style={{ width: 50, height: 28, padding: "0 4px", textAlign: "center" }}
-                    defaultValue={p.quantity_used || 1} 
-                    onBlur={(e) => updateUsageQty(p.id, parseInt(e.target.value) || 1)}
-                  />
-                </div>
-              )}
-              <button 
-                className={`btn btn-sm ${p.is_linked ? "btn-secondary" : "btn-primary"}`}
-                style={{ padding: "4px 12px", fontSize: 12 }}
-                onClick={() => togglePrinter(p.id, p.is_linked, p.quantity_used)}
-                disabled={saving}
-              >
-                {p.is_linked ? "Unlink" : "Link"}
-              </button>
-            </div>
-          ))}
-          {allPrinters.length === 0 && (
-            <div style={{ textAlign: "center", padding: 20, color: "var(--text-muted)" }}>No printers found</div>
-          )}
-        </div>
       </div>
     </>
   );

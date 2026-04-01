@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
-import {
-  Printer, MapPin, CheckCircle, AlertTriangle, ChevronRight,
-  Image as ImageIcon, Plus, X,
-} from "lucide-react";
-import type { Printer as PrinterType } from "@/app/_lib/types";
+import { Printer, MapPin, CheckCircle, AlertTriangle, ChevronRight, Image as ImageIcon, Plus, X, Package, Settings2, Trash2 } from "lucide-react";
+import type { Printer as PrinterType, SupplyWithStatus } from "@/app/_lib/types";
+
+interface PrinterWithSupplies extends PrinterType {
+  supplies: {
+    supply_id: number;
+    supply_name: string;
+    supply_unit: string;
+    supply_type: string;
+    quantity_used: number;
+  }[];
+}
 
 const STATUS_BADGE: Record<string, string> = {
   active:      "badge badge-active",
@@ -36,25 +42,33 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function PrintersPage() {
-  const router = useRouter();
-  const [printers, setPrinters] = useState<PrinterType[]>([]);
+  const [printers, setPrinters] = useState<PrinterWithSupplies[]>([]);
+  const [allSupplies, setAllSupplies] = useState<SupplyWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [managingSuppliesFor, setManagingSuppliesFor] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchPrinters = useCallback(async () => {
     const res = await fetch("/api/printers");
-    const json = await res.json() as { data: PrinterType[] };
+    const json = await res.json() as { data: PrinterWithSupplies[] };
     setPrinters(json.data ?? []);
     setLoading(false);
   }, []);
 
+  const fetchSupplies = useCallback(async () => {
+    const res = await fetch("/api/supplies");
+    const json = await res.json() as { data: SupplyWithStatus[] };
+    setAllSupplies(json.data ?? []);
+  }, []);
+
   useEffect(() => {
     fetchPrinters();
-  }, [fetchPrinters]);
+    fetchSupplies();
+  }, [fetchPrinters, fetchSupplies]);
 
   // Listen for FAB
   useEffect(() => {
@@ -100,6 +114,19 @@ export default function PrintersPage() {
     }
   }
 
+  async function updateUsage(printerId: number, supplyId: number, quantity: number, action: "link" | "unlink" | "update" = "update") {
+    try {
+      await fetch(`/api/printers/${printerId}/supplies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ supply_id: supplyId, quantity_used: quantity, action }),
+      });
+      await fetchPrinters();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   return (
     <>
       <div className="page-header">
@@ -127,53 +154,121 @@ export default function PrintersPage() {
 
       <div className="list-stack">
         {printers.map((p, i) => (
-          <button
+          <div
             key={p.id}
-            id={`printer-card-${p.id}`}
-            className={`card card-press animate-in stagger-${Math.min(i + 1, 4)}`}
-            style={{
-              width: "100%",
-              textAlign: "left",
-              cursor: "pointer",
-              padding: 0,
-              overflow: "hidden",
-            }}
-            onClick={() => router.push(`/printers/${p.id}`)}
+            className={`card animate-in stagger-${Math.min(i + 1, 4)}`}
+            style={{ width: "100%", padding: 0, overflow: "hidden" }}
           >
-            {p.photo_url && (
-              <img src={p.photo_url} alt={p.name} className="photo-thumb" />
-            )}
-            <div style={{ padding: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  {!p.photo_url && (
-                    <div className="photo-placeholder">
-                      <Printer size={20} />
+            <div style={{ display: "flex" }}>
+              {p.photo_url && (
+                <img src={p.photo_url} alt={p.name} className="photo-thumb" style={{ width: 100, height: "auto" }} />
+              )}
+              <div style={{ flex: 1, padding: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {!p.photo_url && (
+                      <div className="photo-placeholder">
+                        <Printer size={20} />
+                      </div>
+                    )}
+                    <div>
+                      <p style={{ fontWeight: 600, fontSize: 15, color: "var(--text-primary)" }}>{p.name}</p>
+                      <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{p.brand} {p.model}</p>
                     </div>
-                  )}
-                  <div>
-                    <p style={{ fontWeight: 600, fontSize: 15, color: "var(--text-primary)" }}>
-                      {p.name}
-                    </p>
-                    <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                      {p.brand} {p.model}
-                    </p>
                   </div>
+                  <ChevronRight size={18} color="var(--text-muted)" />
                 </div>
-                <ChevronRight size={18} color="var(--text-muted)" />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span className={STATUS_BADGE[p.status]}>
-                  {p.status === "active" ? <CheckCircle size={10} /> : p.status === "maintenance" ? <AlertTriangle size={10} /> : null}
-                  {STATUS_LABEL[p.status]}
-                </span>
-                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}>
-                  <MapPin size={11} />
-                  {p.location}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className={STATUS_BADGE[p.status]}>
+                    {p.status === "active" ? <CheckCircle size={10} /> : p.status === "maintenance" ? <AlertTriangle size={10} /> : null}
+                    {STATUS_LABEL[p.status]}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}>
+                    <MapPin size={11} />
+                    {p.location}
+                  </span>
+                </div>
               </div>
             </div>
-          </button>
+
+            {/* Supplies List */}
+            <div style={{ borderTop: "1px solid var(--border)", padding: "12px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Settings2 size={13} color="var(--primary)" />
+                  <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.5px", color: "var(--text-muted)" }}>CONSUMPTION SETTINGS</span>
+                </div>
+                <button 
+                  className="btn-ghost" 
+                  style={{ fontSize: 11, padding: "2px 8px", background: "var(--primary-dim)", color: "var(--primary)" }}
+                  onClick={() => setManagingSuppliesFor(managingSuppliesFor === p.id ? null : p.id)}
+                >
+                  {managingSuppliesFor === p.id ? "Cancel" : "Link Supply"}
+                </button>
+              </div>
+
+              {/* Linking view */}
+              {managingSuppliesFor === p.id && (
+                <div className="animate-in" style={{ marginBottom: 12, padding: 8, background: "var(--surface)", borderRadius: 8 }}>
+                  <select 
+                    className="form-select" 
+                    style={{ fontSize: 13 }}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                         updateUsage(p.id, parseInt(e.target.value), 1, "link");
+                         setManagingSuppliesFor(null);
+                      }
+                    }}
+                    value=""
+                  >
+                    <option value="">Select a supply to link...</option>
+                    {allSupplies
+                      .filter(s => !p.supplies.some(ps => ps.supply_id === s.id))
+                      .map(s => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.type})</option>
+                      ))
+                    }
+                  </select>
+                </div>
+              )}
+
+              {p.supplies.length === 0 ? (
+                <p style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>No linked supplies</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {p.supplies.map(ps => (
+                    <div key={ps.supply_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.02)", padding: "6px 10px", borderRadius: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Package size={14} color="var(--text-muted)" />
+                        <span style={{ fontSize: 14, fontWeight: 500 }}>{ps.supply_name}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Usage:</span>
+                          <input 
+                            type="number"
+                            className="form-input"
+                            min={1}
+                            style={{ width: 50, padding: "2px 4px", fontSize: 13, height: "auto", textAlign: "center" }}
+                            value={ps.quantity_used}
+                            onChange={(e) => updateUsage(p.id, ps.supply_id, parseInt(e.target.value) || 1)}
+                          />
+                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{ps.supply_unit}</span>
+                        </div>
+                        <button 
+                          onClick={() => updateUsage(p.id, ps.supply_id, 0, "unlink")}
+                          style={{ border: "none", background: "none", cursor: "pointer", color: "var(--danger)", padding: 4 }}
+                          aria-label="Unlink supply"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         ))}
       </div>
 

@@ -7,8 +7,26 @@ export async function GET() {
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   await initDb();
-  const { rows } = await query<Printer>("SELECT * FROM printers ORDER BY created_at DESC");
-  return Response.json({ data: rows });
+  
+  // Get all printers
+  const printersRes = await query<Printer>("SELECT * FROM printers ORDER BY created_at DESC");
+  const printers = printersRes.rows;
+
+  // Get all printer supply links with supply details
+  const linksRes = await query(
+    `SELECT ps.printer_id, ps.quantity_used, s.id as supply_id, s.name as supply_name, s.unit as supply_unit, s.type as supply_type
+     FROM printer_supplies ps
+     JOIN supplies s ON s.id = ps.supply_id`
+  );
+  const links = linksRes.rows;
+
+  // Group supplies for each printer
+  const data = printers.map(p => ({
+    ...p,
+    supplies: links.filter(l => l.printer_id === p.id)
+  }));
+
+  return Response.json({ data });
 }
 
 export async function POST(request: Request) {
