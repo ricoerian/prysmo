@@ -316,7 +316,7 @@ export default function PrintersPage() {
                             min={1}
                             style={{ width: 50, padding: "2px 4px", fontSize: 13, height: "auto", textAlign: "center" }}
                             value={ps.quantity_used}
-                            onChange={(e) => updateUsage(p.id, ps.supply_id, parseInt(e.target.value) || 1)}
+                            onInput={(e) => updateUsage(p.id, ps.supply_id, parseInt(e.target.value) || 1)}
                           />
                           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{ps.supply_unit}</span>
                         </div>
