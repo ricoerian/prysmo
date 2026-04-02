@@ -1,4 +1,4 @@
-import { query, initDb, getPool } from "@/app/_lib/db";
+import { query, getPool } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { OrderWithDetails, StockOrder } from "@/app/_lib/types";
 
@@ -17,7 +17,6 @@ export async function GET(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
   const { rows } = await query<OrderWithDetails>(
     `${ORDER_SELECT} WHERE so.id = $1`,
@@ -25,7 +24,10 @@ export async function GET(
   );
 
   if (rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
-  return Response.json({ data: rows[0] });
+  return Response.json(
+    { data: rows[0] },
+    { headers: { "Cache-Control": "private, no-cache" } }
+  );
 }
 
 export async function PATCH(
@@ -40,7 +42,6 @@ export async function PATCH(
   const client = await pool.connect();
 
   try {
-    await initDb();
     const { status, notes, quantity } = await request.json();
 
     // Fetch existing order to check transition to fulfilled
@@ -99,7 +100,6 @@ export async function DELETE(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
   const existing = await query("SELECT id FROM stock_orders WHERE id = $1", [id]);
   if (existing.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });

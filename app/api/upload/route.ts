@@ -6,6 +6,20 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE_MB = 5;
 const BUCKET_NAME = "prysmo";
 
+// Cache the bucket readiness check in module scope so it only runs once
+// per cold-start (not on every upload request).
+let _bucketReady = false;
+
+async function ensureBucket() {
+  if (_bucketReady) return;
+  const { data: bucket, error: bucketError } = await supabase.storage.getBucket(BUCKET_NAME);
+  if (!bucket || bucketError) {
+    console.log(`Auto-healing: Creating missing bucket "${BUCKET_NAME}"`);
+    await supabase.storage.createBucket(BUCKET_NAME, { public: true });
+  }
+  _bucketReady = true;
+}
+
 export async function POST(request: NextRequest) {
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -32,19 +46,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await ensureBucket();
+
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
-    // --- AUTO-HEALING: Ensure bucket exists ---
-    const { data: bucket, error: bucketError } = await supabase.storage.getBucket(BUCKET_NAME);
-    if (!bucket || bucketError) {
-      console.log(`Auto-healing: Creating missing bucket "${BUCKET_NAME}"`);
-      await supabase.storage.createBucket(BUCKET_NAME, { public: true });
-    }
-    // ------------------------------------------
 
     const { error } = await supabase.storage
       .from(BUCKET_NAME)
@@ -54,8 +62,13 @@ export async function POST(request: NextRequest) {
       });
 
     if (error) {
+      // If the bucket actually doesn't exist, reset the cache flag so the
+      // next attempt will try to create it again.
+      if (error.message?.includes("not found") || error.message?.includes("does not exist")) {
+        _bucketReady = false;
+      }
       console.error("SUPABASE STORAGE ERROR:", error);
-      return Response.json({ 
+      return Response.json({
         error: `Upload failed: ${error.message} (Bucket: ${BUCKET_NAME})`,
         details: error
       }, { status: 500 });
@@ -70,9 +83,9 @@ export async function POST(request: NextRequest) {
   } catch (err: unknown) {
     const error = err as Error;
     console.error("GENERIC UPLOAD ERROR:", error);
-    return Response.json({ 
-      error: "Internal server error during upload", 
-      message: error.message 
+    return Response.json({
+      error: "Internal server error during upload",
+      message: error.message
     }, { status: 500 });
   }
 }

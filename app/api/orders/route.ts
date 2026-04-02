@@ -1,4 +1,4 @@
-import { query, initDb } from "@/app/_lib/db";
+import { query } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { OrderWithDetails } from "@/app/_lib/types";
 
@@ -14,11 +14,13 @@ export async function GET() {
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { rows } = await query<OrderWithDetails>(
     `${ORDER_SELECT} ORDER BY so.ordered_at DESC`
   );
-  return Response.json({ data: rows });
+  return Response.json(
+    { data: rows },
+    { headers: { "Cache-Control": "private, no-cache" } }
+  );
 }
 
 export async function POST(request: Request) {
@@ -26,7 +28,6 @@ export async function POST(request: Request) {
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    await initDb();
     const { supply_id, quantity, notes } = await request.json();
     if (!supply_id) {
       return Response.json({ error: "supply_id is required" }, { status: 400 });

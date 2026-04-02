@@ -1,4 +1,4 @@
-import { query, initDb } from "@/app/_lib/db";
+import { query } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { PrintRunWithDetails, PrintRunItem } from "@/app/_lib/types";
 
@@ -40,12 +40,11 @@ export async function GET(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
   const run = await getRunWithItems(id);
 
   if (!run) return Response.json({ error: "Not found" }, { status: 404 });
-  return Response.json({ data: run });
+  return Response.json({ data: run }, { headers: { "Cache-Control": "private, no-cache" } });
 }
 
 /** Toggle item packed status */
@@ -56,7 +55,6 @@ export async function PATCH(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
   const run = await query("SELECT id FROM print_runs WHERE id = $1", [id]);
   if (run.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
@@ -87,7 +85,6 @@ export async function DELETE(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
   const run = await query("SELECT id FROM print_runs WHERE id = $1", [id]);
   if (run.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });

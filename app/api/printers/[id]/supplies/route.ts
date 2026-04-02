@@ -1,4 +1,4 @@
-import { query, initDb } from "@/app/_lib/db";
+import { query } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 
 export async function GET(
@@ -8,7 +8,6 @@ export async function GET(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
 
   // Get all supplies and mark which ones are linked to this printer
@@ -22,7 +21,10 @@ export async function GET(
     [id]
   );
 
-  return Response.json({ data: rows });
+  return Response.json(
+    { data: rows },
+    { headers: { "Cache-Control": "private, no-cache" } }
+  );
 }
 
 export async function POST(
@@ -33,7 +35,6 @@ export async function POST(
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    await initDb();
     const { id } = await ctx.params; // printer_id
     const { supply_id, quantity_used, action } = await request.json();
 

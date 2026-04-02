@@ -1,4 +1,4 @@
-import { query, getPool, initDb } from "@/app/_lib/db";
+import { query, getPool } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { Printer, Supply } from "@/app/_lib/types";
 
@@ -9,7 +9,6 @@ export async function GET(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
 
   const printerRes = await query<Printer>("SELECT * FROM printers WHERE id = $1", [id]);
@@ -22,7 +21,10 @@ export async function GET(
     [id]
   );
 
-  return Response.json({ data: { ...printerRes.rows[0], supplies: suppliesRes.rows } });
+  return Response.json(
+    { data: { ...printerRes.rows[0], supplies: suppliesRes.rows } },
+    { headers: { "Cache-Control": "private, no-cache" } }
+  );
 }
 
 export async function PUT(
@@ -32,7 +34,6 @@ export async function PUT(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
   const existing = await query("SELECT id FROM printers WHERE id = $1", [id]);
   if (existing.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
@@ -60,7 +61,6 @@ export async function DELETE(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
   const existing = await query("SELECT id FROM printers WHERE id = $1", [id]);
   if (existing.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
@@ -77,7 +77,6 @@ export async function PATCH(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
   const { supplyIds } = (await request.json()) as { supplyIds: number[] };
   const client = await getPool().connect();

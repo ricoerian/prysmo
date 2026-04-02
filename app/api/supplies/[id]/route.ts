@@ -1,4 +1,4 @@
-import { query, initDb } from "@/app/_lib/db";
+import { query } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { Supply, Printer } from "@/app/_lib/types";
 
@@ -9,7 +9,6 @@ export async function GET(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
 
   const supplyRes = await query<Supply>("SELECT * FROM supplies WHERE id = $1", [id]);
@@ -23,13 +22,16 @@ export async function GET(
     [id]
   );
 
-  return Response.json({
-    data: {
-      ...supply,
-      is_low: supply.quantity <= supply.min_quantity,
-      printers: printersRes.rows,
+  return Response.json(
+    {
+      data: {
+        ...supply,
+        is_low: supply.quantity <= supply.min_quantity,
+        printers: printersRes.rows,
+      },
     },
-  });
+    { headers: { "Cache-Control": "private, no-cache" } }
+  );
 }
 
 export async function PUT(
@@ -39,7 +41,6 @@ export async function PUT(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
 
   const existingRes = await query<Supply>("SELECT * FROM supplies WHERE id = $1", [id]);
@@ -86,7 +87,6 @@ export async function DELETE(
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { id } = await ctx.params;
   const existing = await query("SELECT id FROM supplies WHERE id = $1", [id]);
   if (existing.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });

@@ -1,4 +1,4 @@
-import { query, initDb } from "@/app/_lib/db";
+import { query } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { DashboardStats, SupplyWithStatus, OrderWithDetails } from "@/app/_lib/types";
 
@@ -6,8 +6,6 @@ export async function GET() {
   try {
     const session = await getSession();
     if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-
-    await initDb();
 
     const [
       totalPrintersRes,
@@ -45,7 +43,10 @@ export async function GET() {
       recentOrders: recentOrdersRes.rows,
     };
 
-    return Response.json({ data: stats });
+    return Response.json(
+      { data: stats },
+      { headers: { "Cache-Control": "private, no-cache" } }
+    );
   } catch (err) {
     console.error(err);
     return Response.json({ error: "Internal server error" }, { status: 500 });

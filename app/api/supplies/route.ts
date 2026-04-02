@@ -1,4 +1,4 @@
-import { query, initDb } from "@/app/_lib/db";
+import { query } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { Supply, SupplyWithStatus } from "@/app/_lib/types";
 
@@ -6,7 +6,6 @@ export async function GET() {
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const { rows } = await query<SupplyWithStatus>(
     `SELECT s.*,
             CASE WHEN s.quantity <= s.min_quantity THEN TRUE ELSE FALSE END AS is_low,
@@ -17,7 +16,10 @@ export async function GET() {
      ORDER BY s.created_at ASC`
   );
 
-  return Response.json({ data: rows });
+  return Response.json(
+    { data: rows },
+    { headers: { "Cache-Control": "private, no-cache" } }
+  );
 }
 
 export async function POST(request: Request) {
@@ -25,7 +27,6 @@ export async function POST(request: Request) {
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    await initDb();
     const { name, type, sku, quantity, min_quantity, default_order_quantity, unit, notes, photo_url } = await request.json();
     if (!name || quantity === undefined || min_quantity === undefined) {
       return Response.json(

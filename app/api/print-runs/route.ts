@@ -1,4 +1,4 @@
-import { query, getPool, initDb } from "@/app/_lib/db";
+import { query, getPool } from "@/app/_lib/db";
 import { getSession } from "@/app/_lib/auth";
 import type { PrintRunWithDetails, PrintRunItem } from "@/app/_lib/types";
 
@@ -37,7 +37,6 @@ export async function GET() {
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  await initDb();
   const runsRes = await query<RawRun>(
     `SELECT pr.*, p.name AS printer_name, p.location AS printer_location
      FROM print_runs pr
@@ -46,7 +45,7 @@ export async function GET() {
   );
 
   const result = await Promise.all(runsRes.rows.map((run) => getRunWithItems(run.id)));
-  return Response.json({ data: result });
+  return Response.json({ data: result }, { headers: { "Cache-Control": "private, no-cache" } });
 }
 
 export async function POST(request: Request) {
@@ -54,7 +53,7 @@ export async function POST(request: Request) {
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    await initDb();
+
     const {
       printer_id,
       name,
