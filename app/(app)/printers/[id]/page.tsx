@@ -25,21 +25,14 @@ const SUPPLY_TYPE_BADGE: Record<string, string> = {
 export default function PrinterDetailPage() {
   const router = useRouter();
   const { id } = useParams() as { id: string };
-
   const [printer, setPrinter] = useState<PrinterWithSupplies | null>(null);
   const [allSupplies, setAllSupplies] = useState<SupplyWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Sheet state
   const [sheet, setSheet] = useState<"edit" | "supplies" | null>(null);
-
-  // Edit form
   const [editForm, setEditForm] = useState({ name: "", brand: "", model: "", location: "", status: "", notes: "", photo_url: "" });
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  // Supply linking
   const [selectedSupplyIds, setSelectedSupplyIds] = useState<Set<number>>(new Set());
 
   const fetchPrinter = useCallback(async () => {
@@ -195,36 +188,34 @@ export default function PrinterDetailPage() {
           <Edit2 size={14} /> Edit
         </button>
         <button className="btn btn-secondary" onClick={openSupplies} style={{ fontSize: 13 }}>
-          <Link2 size={14} /> Supplies
+          <Link2 size={14} /> Stock
         </button>
         <button className="btn btn-secondary" onClick={() => router.push("/orders")} style={{ fontSize: 13 }}>
-          <ShoppingCart size={14} /> Orders
+          <ShoppingCart size={14} /> Pesanan
         </button>
       </div>
 
-      {/* Info rows */}
       <div className="card animate-in stagger-2" style={{ marginBottom: 16 }}>
-        <p className="section-title">Details</p>
+        <p className="section-title">Detail</p>
         {printer.notes && (
           <div className="info-row">
-            <span className="info-label">Notes</span>
+            <span className="info-label">Catatan</span>
             <span className="info-value" style={{ maxWidth: "60%", wordBreak: "break-word" }}>{printer.notes}</span>
           </div>
         )}
         <div className="info-row">
-          <span className="info-label">Added</span>
+          <span className="info-label">Ditambahkan</span>
           <span className="info-value">
             {new Date(printer.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
           </span>
         </div>
       </div>
 
-      {/* Supplies */}
       <div className="animate-in stagger-3">
-        <p className="section-title">Linked Supplies ({printer.supplies.length})</p>
+        <p className="section-title">Stock Material ({printer.supplies.length})</p>
         {printer.supplies.length === 0 ? (
           <div className="card" style={{ textAlign: "center", padding: "24px 16px", color: "var(--text-muted)", fontSize: 13 }}>
-            No supplies linked yet — tap Supplies to add
+            Belum ada stock material — tap Stock untuk menambahkan
           </div>
         ) : (
           <div className="list-stack">
@@ -250,17 +241,14 @@ export default function PrinterDetailPage() {
         )}
       </div>
 
-      {/* Delete */}
       <div style={{ marginTop: 24, marginBottom: 8 }}>
         <button className="btn btn-danger btn-full" onClick={handleDelete}>
-          Delete Printer
+          Hapus Printer
         </button>
       </div>
 
-      {/* Overlay */}
       <div className={`sheet-overlay${sheet ? " open" : ""}`} onClick={closeSheet} aria-hidden="true" />
 
-      {/* Edit Sheet */}
       <div className={`bottom-sheet${sheet === "edit" ? " open" : ""}`} role="dialog" aria-label="Edit Printer" aria-modal="true">
         <div className="sheet-handle" />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -269,7 +257,7 @@ export default function PrinterDetailPage() {
         </div>
         <form onSubmit={saveEdit}>
           <div className="form-group">
-            <label className="form-label">Photo</label>
+            <label className="form-label">Gambar Printer</label>
             <div className="photo-upload-area" onClick={() => fileRef.current?.click()} role="button" tabIndex={0}
               onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}>
               {editForm.photo_url ? (
@@ -284,7 +272,7 @@ export default function PrinterDetailPage() {
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="edit-name">Name *</label>
+            <label className="form-label" htmlFor="edit-name">Nama Printer *</label>
             <input id="edit-name" className="form-input" value={editForm.name}
               onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} required />
           </div>
@@ -301,28 +289,28 @@ export default function PrinterDetailPage() {
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="edit-location">Location</label>
+            <label className="form-label" htmlFor="edit-location">Lokasi</label>
             <input id="edit-location" className="form-input" value={editForm.location}
               onChange={(e) => setEditForm((f) => ({ ...f, location: e.target.value }))} />
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="edit-status">Status</label>
+            <label className="form-label" htmlFor="edit-status">Status Printer</label>
             <select id="edit-status" className="form-select" value={editForm.status}
               onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="maintenance">Maintenance</option>
+              <option value="active">Aktif</option>
+              <option value="inactive">Tidak Aktif</option>
+              <option value="maintenance">Perbaikan</option>
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="edit-notes">Notes</label>
+            <label className="form-label" htmlFor="edit-notes">Catatan</label>
             <textarea id="edit-notes" className="form-textarea" value={editForm.notes}
               onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))} />
           </div>
           <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={closeSheet}>Cancel</button>
+            <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={closeSheet}>Batal</button>
             <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={saving}>
-              {saving ? <span className="spinner" /> : "Save Changes"}
+              {saving ? <span className="spinner" /> : "Simpan Perubahan"}
             </button>
           </div>
         </form>
@@ -332,11 +320,11 @@ export default function PrinterDetailPage() {
       <div className={`bottom-sheet${sheet === "supplies" ? " open" : ""}`} role="dialog" aria-label="Manage Supplies" aria-modal="true">
         <div className="sheet-handle" />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Link Supplies</h2>
+          <h2 className="sheet-title" style={{ marginBottom: 0 }}>Tambah Stock Material</h2>
           <button className="btn-ghost" onClick={closeSheet} aria-label="Close"><X size={20} /></button>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
-          Select which supplies this printer uses.
+          Pilih stock material yang terpasang pada printer ini.
         </p>
         <div className="list-stack" style={{ marginBottom: 16 }}>
           {allSupplies.map((s) => {
