@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   ArrowLeft, Package, FileText, Droplets, Box, AlertTriangle,
-  Printer, Edit2, ShoppingCart, X, Plus
+  Printer, Edit2, ShoppingCart, X, Plus, Image as ImageIcon
 } from "lucide-react";
 import type { SupplyWithPrinters } from "@/app/_lib/types";
 
@@ -38,6 +38,8 @@ export default function SupplyDetailPage() {
   const [orderQty, setOrderQty] = useState(0);
   const [orderNotes, setOrderNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchSupply = useCallback(async () => {
     const res = await fetch(`/api/supplies/${id}`);
@@ -66,6 +68,21 @@ export default function SupplyDetailPage() {
     setSheet("order");
   }
 
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const json = await res.json() as { url?: string };
+      if (json.url) setEditForm((f) => ({ ...f, photo_url: json.url! }));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
 
   async function saveEdit(e: React.FormEvent) {
     e.preventDefault();
@@ -253,6 +270,21 @@ export default function SupplyDetailPage() {
           <button className="btn-ghost" onClick={() => setSheet(null)} aria-label="Tutup"><X size={20} /></button>
         </div>
         <form onSubmit={saveEdit}>
+          <div className="form-group">
+            <label className="form-label">Foto (opsional)</label>
+            <div className="photo-upload-area" onClick={() => fileRef.current?.click()} role="button" tabIndex={0}
+              onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}>
+              {editForm.photo_url ? (
+                <img src={editForm.photo_url} alt="Pratinjau" className="photo-thumb" style={{ height: 100 }} />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: "var(--text-muted)" }}>
+                  {uploadingPhoto ? <span className="spinner" /> : <ImageIcon size={24} />}
+                  <span style={{ fontSize: 13 }}>{uploadingPhoto ? "Mengunggah…" : "Ketuk untuk unggah foto"}</span>
+                </div>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoChange} />
+            </div>
+          </div>
           <div className="form-group">
             <label className="form-label" htmlFor="edit-name">Nama *</label>
             <input id="edit-name" className="form-input" value={editForm.name}
