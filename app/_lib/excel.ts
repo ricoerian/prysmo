@@ -6,15 +6,18 @@ function mapData(data: Record<string, unknown>[], headers: Record<string, string
     Object.entries(headers).forEach(([key, label]) => {
       let value = item[key];
       
-      // Formatting specific fields
-      if (key.includes("at") && value && (typeof value === "string" || typeof value === "number" || value instanceof Date)) {
-        value = new Date(value).toLocaleDateString("id-ID", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+      // Formatting specifically date fields (ending in _at)
+      if (key.endsWith("_at") && value && (typeof value === "string" || typeof value === "number" || value instanceof Date)) {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          value = date.toLocaleDateString("id-ID", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        }
       }
       
       mapped[label] = value ?? "-";
