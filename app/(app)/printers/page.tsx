@@ -58,7 +58,6 @@ function QuantityInput({ value, onCommit }: { value: number; onCommit: (val: num
       value={localValue}
       onChange={(e) => setLocalValue(parseInt(e.target.value) || 1)}
       onBlur={() => onCommit(localValue)}
-      onKeyDown={(e) => e.key === "Enter" && onCommit(localValue)}
     />
   );
 }
