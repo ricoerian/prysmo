@@ -8,6 +8,8 @@ import {
   CheckCircle, LogOut, Clock,
 } from "lucide-react";
 import type { DashboardStats } from "@/app/_lib/types";
+import ExportActions from "./_components/ExportActions";
+
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -126,6 +128,8 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+
+          <ExportActions />
 
           {/* Low stock items */}
           {stats && stats.lowStockSupplies.length > 0 && (
