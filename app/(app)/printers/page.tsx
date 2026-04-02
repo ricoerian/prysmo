@@ -42,6 +42,27 @@ const EMPTY_FORM: FormState = {
   status: "active", notes: "", photo_url: "",
 };
 
+function QuantityInput({ value, onCommit }: { value: number; onCommit: (val: number) => void }) {
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  return (
+    <input
+      type="number"
+      className="form-input"
+      min={1}
+      style={{ width: 50, padding: "2px 4px", fontSize: 13, height: "auto", textAlign: "center" }}
+      value={localValue}
+      onChange={(e) => setLocalValue(parseInt(e.target.value) || 1)}
+      onBlur={() => onCommit(localValue)}
+      onKeyDown={(e) => e.key === "Enter" && onCommit(localValue)}
+    />
+  );
+}
+
 export default function PrintersPage() {
   const router = useRouter();
   const [printers, setPrinters] = useState<PrinterWithSupplies[]>([]);
@@ -310,13 +331,9 @@ export default function PrintersPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Stock:</span>
-                          <input 
-                            type="number"
-                            className="form-input"
-                            min={1}
-                            style={{ width: 50, padding: "2px 4px", fontSize: 13, height: "auto", textAlign: "center" }}
+                          <QuantityInput
                             value={ps.quantity_used}
-                            onInput={(e) => updateUsage(p.id, ps.supply_id, parseInt(e.target.value) || 1)}
+                            onCommit={(val) => updateUsage(p.id, ps.supply_id, val)}
                           />
                           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{ps.supply_unit}</span>
                         </div>
