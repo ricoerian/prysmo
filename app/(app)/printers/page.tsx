@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Printer, MapPin, CheckCircle, AlertTriangle, ChevronRight, Image as ImageIcon, Plus, X, Package, Settings2, Trash2, Filter, Search, PaintBucket } from "lucide-react";
+import { Printer, MapPin, CheckCircle, AlertTriangle, ChevronRight, Image as ImageIcon, Plus, X, Package, Settings2, Trash2, Filter, Search, Clock } from "lucide-react";
 import type { Printer as PrinterType, SupplyWithStatus } from "@/app/_lib/types";
 
 interface PrinterWithSupplies extends PrinterType {
@@ -276,8 +276,8 @@ export default function PrintersPage() {
                   </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
-                  <span style={{ color: "black" }}>
-                    <PaintBucket size={11} />
+                  <span style={{ color: "var(--primary)" }}>
+                    <Clock size={11} />
                     {p.last_ink_replacement ? " " + new Date(p.last_ink_replacement).toLocaleString("en-US", { timeZone: "Asia/Jakarta", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : " - "}
                     {p.last_ink_replacement_shift ? ` (${p.last_ink_replacement_shift})` : " - "}
                   </span>
