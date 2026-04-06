@@ -11,6 +11,7 @@ function mapData(data: Record<string, unknown>[], headers: Record<string, string
         const date = new Date(value);
         if (!isNaN(date.getTime())) {
           value = date.toLocaleDateString("id-ID", {
+            timeZone: "Asia/Jakarta",
             year: "numeric",
             month: "short",
             day: "numeric",

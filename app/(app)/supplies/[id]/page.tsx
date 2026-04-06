@@ -216,7 +216,7 @@ export default function SupplyDetailPage() {
         <div className="info-row">
           <span className="info-label">Ditambahkan</span>
           <span className="info-value">
-            {new Date(supply.created_at).toLocaleDateString("id-ID", { year: "numeric", month: "short", day: "numeric" })}
+            {new Date(supply.created_at).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", year: "numeric", month: "short", day: "numeric" })}
           </span>
         </div>
       </div>

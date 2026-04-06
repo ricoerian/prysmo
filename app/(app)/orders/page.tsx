@@ -143,7 +143,7 @@ export default function OrdersPage() {
   // ─── Print Run actions ──────────────────────────────────────────────────
   function openCreateRunSheet() {
     setSelectedPrinterId("");
-    setRunName(`Print Run — ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`);
+    setRunName(`Print Run — ${new Date().toLocaleDateString("en-US", { timeZone: "Asia/Jakarta", month: "short", day: "numeric", year: "numeric" })}`);
     setRunItems([]);
     setSheet(true);
   }
@@ -296,7 +296,7 @@ export default function OrdersPage() {
                         {order.supply_name}
                       </p>
                       <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                        Jml: {order.quantity} · {new Date(order.ordered_at).toLocaleDateString("id-ID", { month: "short", day: "numeric", year: "numeric" })}
+                        Jml: {order.quantity} · {new Date(order.ordered_at).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", month: "short", day: "numeric", year: "numeric" })}
                       </p>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
@@ -346,7 +346,7 @@ export default function OrdersPage() {
                         <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Dipesan oleh {order.orderer_name}</p>
                         {order.fulfilled_at && (
                           <p style={{ fontSize: 12, color: "var(--success)" }}>
-                            Selesai: {new Date(order.fulfilled_at).toLocaleDateString("id-ID")}
+                            Selesai: {new Date(order.fulfilled_at).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" })}
                           </p>
                         )}
                         {order.status === "pending" && (
@@ -456,7 +456,7 @@ export default function OrdersPage() {
                           </span>
                         </div>
                         <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                          {new Date(run.created_at).toLocaleDateString("id-ID", { month: "short", day: "numeric" })}
+                          {new Date(run.created_at).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", month: "short", day: "numeric" })}
                           {" · "}{run.total_count} item
                         </p>
                       </div>

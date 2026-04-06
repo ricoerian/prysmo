@@ -204,7 +204,7 @@ export default function DashboardPage() {
                         <p style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)" }}>{o.supply_name}</p>
                         <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
                           <Clock size={11} style={{ display: "inline", marginRight: 2 }} />
-                          {new Date(o.ordered_at).toLocaleDateString("id-ID", { month: "short", day: "numeric" })} · Jml {o.quantity}
+                          {new Date(o.ordered_at).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", month: "short", day: "numeric" })} · Jml {o.quantity}
                         </p>
                       </div>
                       <span className={`badge badge-${o.status}`}>
