@@ -208,14 +208,14 @@ export default function PrinterDetailPage() {
         <div className="info-row">
           <span className="info-label">Ditambahkan</span>
           <span className="info-value">
-            {new Date(printer.created_at).toLocaleDateString("en-US", { timeZone: "Asia/Jakarta", year: "numeric", month: "short", day: "numeric" })}
+            {new Date(printer.created_at).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", year: "numeric", month: "short", day: "numeric" })}
           </span>
         </div>
         {printer.last_ink_replacement && (
           <div className="info-row" style={{ marginTop: 8 }}>
             <span className="info-label">Terakhir Ganti Tinta</span>
             <span className="info-value">
-              {new Date(printer.last_ink_replacement).toLocaleString("en-US", { timeZone: "Asia/Jakarta", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+              {new Date(printer.last_ink_replacement).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
               {printer.last_ink_replacement_shift ? ` (${printer.last_ink_replacement_shift})` : ""}
             </span>
           </div>

@@ -143,7 +143,7 @@ export default function OrdersPage() {
   // ─── Print Run actions ──────────────────────────────────────────────────
   function openCreateRunSheet() {
     setSelectedPrinterId("");
-    setRunName(`Print Run — ${new Date().toLocaleDateString("en-US", { timeZone: "Asia/Jakarta", month: "short", day: "numeric", year: "numeric" })}`);
+    setRunName(`Print Run — ${new Date().toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", month: "short", day: "numeric", year: "numeric" })}`);
     setRunItems([]);
     setSheet(true);
   }

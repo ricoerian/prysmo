@@ -10,7 +10,7 @@ function mapData(data: Record<string, unknown>[], headers: Record<string, string
       if ((key.endsWith("_at") || key.endsWith("_replacement")) && value && (typeof value === "string" || typeof value === "number" || value instanceof Date)) {
         const date = new Date(value);
         if (!isNaN(date.getTime())) {
-          value = date.toLocaleDateString("id-ID", {
+          value = date.toLocaleString("id-ID", {
             timeZone: "Asia/Jakarta",
             year: "numeric",
             month: "short",
