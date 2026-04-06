@@ -42,16 +42,16 @@ export async function POST(request: Request) {
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const { name, model, brand, location, status, notes, photo_url } = await request.json();
+    const { name, model, brand, location, status, notes, photo_url, last_ink_replacement, last_ink_replacement_shift } = await request.json();
     if (!name || !model || !brand || !location) {
       return Response.json({ error: "name, model, brand, location are required" }, { status: 400 });
     }
 
     const { rows } = await query<Printer>(
-      `INSERT INTO printers (name, model, brand, location, status, notes, photo_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO printers (name, model, brand, location, status, notes, photo_url, last_ink_replacement, last_ink_replacement_shift)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [name, model, brand, location, status ?? "active", notes ?? null, photo_url ?? null]
+      [name, model, brand, location, status ?? "active", notes ?? null, photo_url ?? null, last_ink_replacement ?? null, last_ink_replacement_shift ?? null]
     );
 
     return Response.json({ data: rows[0] }, { status: 201 });

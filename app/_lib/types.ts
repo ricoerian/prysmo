@@ -15,6 +15,8 @@ export interface Printer {
   status: "active" | "inactive" | "maintenance";
   notes: string | null;
   photo_url: string | null;
+  last_ink_replacement: string | null;
+  last_ink_replacement_shift: "D/S" | "N/S" | string | null;
   created_at: string;
 }
 

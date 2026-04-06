@@ -39,13 +39,13 @@ export async function PUT(
   if (existing.rows.length === 0) return Response.json({ error: "Not found" }, { status: 404 });
 
   try {
-    const { name, model, brand, location, status, notes, photo_url } = await request.json();
+    const { name, model, brand, location, status, notes, photo_url, last_ink_replacement, last_ink_replacement_shift } = await request.json();
     const { rows } = await query<Printer>(
       `UPDATE printers
-       SET name=$1, model=$2, brand=$3, location=$4, status=$5, notes=$6, photo_url=$7
-       WHERE id=$8
+       SET name=$1, model=$2, brand=$3, location=$4, status=$5, notes=$6, photo_url=$7, last_ink_replacement=$8, last_ink_replacement_shift=$9
+       WHERE id=$10
        RETURNING *`,
-      [name, model, brand, location, status, notes ?? null, photo_url ?? null, id]
+      [name, model, brand, location, status, notes ?? null, photo_url ?? null, last_ink_replacement ?? null, last_ink_replacement_shift ?? null, id]
     );
     return Response.json({ data: rows[0] });
   } catch (err) {

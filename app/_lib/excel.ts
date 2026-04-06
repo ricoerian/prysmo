@@ -6,8 +6,8 @@ function mapData(data: Record<string, unknown>[], headers: Record<string, string
     Object.entries(headers).forEach(([key, label]) => {
       let value = item[key];
       
-      // Formatting specifically date fields (ending in _at)
-      if (key.endsWith("_at") && value && (typeof value === "string" || typeof value === "number" || value instanceof Date)) {
+      // Formatting specifically date fields (ending in _at or _replacement)
+      if ((key.endsWith("_at") || key.endsWith("_replacement")) && value && (typeof value === "string" || typeof value === "number" || value instanceof Date)) {
         const date = new Date(value);
         if (!isNaN(date.getTime())) {
           value = date.toLocaleDateString("id-ID", {
@@ -44,6 +44,8 @@ const PRINTER_HEADERS = {
   location: "Lokasi",
   status: "Status",
   notes: "Catatan",
+  last_ink_replacement: "Terakhir Ganti Tinta",
+  last_ink_replacement_shift: "Shift",
   created_at: "Tanggal Dibuat",
 };
 

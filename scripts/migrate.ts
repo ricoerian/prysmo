@@ -53,6 +53,8 @@ async function migrate() {
         status TEXT NOT NULL DEFAULT 'active',
         notes TEXT,
         photo_url TEXT,
+        last_ink_replacement TIMESTAMPTZ,
+        last_ink_replacement_shift TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
 
@@ -79,6 +81,8 @@ async function migrate() {
 
       ALTER TABLE supplies ADD COLUMN IF NOT EXISTS default_order_quantity INTEGER NOT NULL DEFAULT 10;
       ALTER TABLE printer_supplies ADD COLUMN IF NOT EXISTS quantity_used INTEGER NOT NULL DEFAULT 1;
+      ALTER TABLE printers ADD COLUMN IF NOT EXISTS last_ink_replacement TIMESTAMPTZ;
+      ALTER TABLE printers ADD COLUMN IF NOT EXISTS last_ink_replacement_shift TEXT;
 
       CREATE TABLE IF NOT EXISTS stock_orders (
         id SERIAL PRIMARY KEY,

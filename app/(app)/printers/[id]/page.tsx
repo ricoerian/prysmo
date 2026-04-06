@@ -29,7 +29,7 @@ export default function PrinterDetailPage() {
   const [allSupplies, setAllSupplies] = useState<SupplyWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheet, setSheet] = useState<"edit" | "supplies" | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", brand: "", model: "", location: "", status: "", notes: "", photo_url: "" });
+  const [editForm, setEditForm] = useState({ name: "", brand: "", model: "", location: "", status: "", notes: "", photo_url: "", last_ink_replacement: "", last_ink_replacement_shift: "" });
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -59,6 +59,8 @@ export default function PrinterDetailPage() {
       name: printer.name, brand: printer.brand, model: printer.model,
       location: printer.location, status: printer.status,
       notes: printer.notes ?? "", photo_url: printer.photo_url ?? "",
+      last_ink_replacement: printer.last_ink_replacement ? new Date(printer.last_ink_replacement).toISOString().slice(0, 16) : "",
+      last_ink_replacement_shift: printer.last_ink_replacement_shift ?? "",
     });
     setSheet("edit");
   }
@@ -209,6 +211,15 @@ export default function PrinterDetailPage() {
             {new Date(printer.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
           </span>
         </div>
+        {printer.last_ink_replacement && (
+          <div className="info-row" style={{ marginTop: 8 }}>
+            <span className="info-label">Terakhir Ganti Tinta</span>
+            <span className="info-value">
+              {new Date(printer.last_ink_replacement).toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+              {printer.last_ink_replacement_shift ? ` (${printer.last_ink_replacement_shift})` : ""}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="animate-in stagger-3">
@@ -301,6 +312,22 @@ export default function PrinterDetailPage() {
               <option value="inactive">Tidak Aktif</option>
               <option value="maintenance">Perbaikan</option>
             </select>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-last-ink">Terakhir Ganti Tinta</label>
+              <input id="edit-last-ink" type="datetime-local" className="form-input" value={editForm.last_ink_replacement}
+                onChange={(e) => setEditForm((f) => ({ ...f, last_ink_replacement: e.target.value }))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-last-ink-shift">Shift</label>
+              <select id="edit-last-ink-shift" className="form-select" value={editForm.last_ink_replacement_shift}
+                onChange={(e) => setEditForm((f) => ({ ...f, last_ink_replacement_shift: e.target.value }))}>
+                <option value="">- Pilih Shift -</option>
+                <option value="D/S">Day Shift (D/S)</option>
+                <option value="N/S">Night Shift (N/S)</option>
+              </select>
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label" htmlFor="edit-notes">Catatan</label>

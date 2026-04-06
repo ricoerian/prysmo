@@ -35,11 +35,13 @@ interface FormState {
   status: string;
   notes: string;
   photo_url: string;
+  last_ink_replacement: string;
+  last_ink_replacement_shift: string;
 }
 
 const EMPTY_FORM: FormState = {
   name: "", brand: "", model: "", location: "",
-  status: "active", notes: "", photo_url: "",
+  status: "active", notes: "", photo_url: "", last_ink_replacement: "", last_ink_replacement_shift: "",
 };
 
 function QuantityInput({ value, onCommit }: { value: number; onCommit: (val: number) => void }) {
@@ -456,6 +458,31 @@ export default function PrintersPage() {
               <option value="inactive">Tidak Aktif</option>
               <option value="maintenance">Perbaikan</option>
             </select>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="printer-last-ink">Terakhir Ganti Tinta</label>
+              <input
+                id="printer-last-ink"
+                type="datetime-local"
+                className="form-input"
+                value={form.last_ink_replacement}
+                onChange={(e) => setForm((f) => ({ ...f, last_ink_replacement: e.target.value }))}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="printer-last-ink-shift">Sif</label>
+              <select
+                id="printer-last-ink-shift"
+                className="form-select"
+                value={form.last_ink_replacement_shift}
+                onChange={(e) => setForm((f) => ({ ...f, last_ink_replacement_shift: e.target.value }))}
+              >
+                <option value="">- Pilih Sif -</option>
+                <option value="D/S">Day Shift (D/S)</option>
+                <option value="N/S">Night Shift (N/S)</option>
+              </select>
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label" htmlFor="printer-notes">Catatan</label>
