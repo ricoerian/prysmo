@@ -277,7 +277,7 @@ export default function PrintersPage() {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
                   <span style={{ color: "black" }}>
-                    <Droplets size={11} />
+                    <Droplets size={14} />
                     {p.last_ink_replacement ? " " + new Date(p.last_ink_replacement).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : " - "}
                     {p.last_ink_replacement_shift ? ` (${p.last_ink_replacement_shift})` : " - "}
                   </span>
