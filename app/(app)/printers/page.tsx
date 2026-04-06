@@ -278,8 +278,8 @@ export default function PrintersPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
                   <span style={{ color: "var(--primary)" }}>
                     <Clock size={11} />
-                    {p.last_ink_replacement ? new Date(p.last_ink_replacement).toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "-"}
-                    {p.last_ink_replacement_shift ? ` (${p.last_ink_replacement_shift})` : "-"}
+                    {p.last_ink_replacement ? " " + new Date(p.last_ink_replacement).toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : " - "}
+                    {p.last_ink_replacement_shift ? ` (${p.last_ink_replacement_shift})` : " - "}
                   </span>
                 </div>
               </div>
